@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "jobs": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {
+          "id": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "traceback": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "product_id",
+        "status"
+      ]
+    },
+    "waiting": {
+      "type": "boolean"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "jobs"
+  ]
+}
