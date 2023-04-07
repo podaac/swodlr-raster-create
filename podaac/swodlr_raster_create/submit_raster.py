@@ -1,4 +1,5 @@
 import logging
+import sds_statuses
 from utils import (
   get_param, mozart_client, load_json_schema, search_datasets
 )
@@ -16,6 +17,11 @@ def lambda_handler(event, _context):
   raster_jobs = {}
 
   for eval_job in evaluate_jobs.values():
+    if eval_job['status'] not in sds_statuses.SUCCESS:
+      # Pass through fail statuses
+      raster_job[eval_job['id']] = eval_job
+      continue
+
     state_config_id = mozart_client        \
         .get_job_by_id(eval_job['id'])     \
         .get_generated_products()[0]['id']
@@ -29,6 +35,12 @@ def lambda_handler(event, _context):
       'output_granule_extent_flag', 'utm_zone_adjust', 'mgrs_band_adjust'
     ]
     input_params = {param: eval_job['metadata'][param] for param in params}
+
+    # Input param conversions
+    input_params['output_sampling_grid_type'] = \
+      input_params['output_sampling_grid_type'].lower()
+    input_params['output_granule_extent_flag'] = \
+      1 if input_params['output_granule_extent_flag'] else 0
 
     raster_job_type.set_input_dataset(state_config)
     raster_job_type.set_input_params(input_params)
