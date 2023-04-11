@@ -1,30 +1,29 @@
 from copy import deepcopy
 import json
 import logging
-from utils import db_update_queue, load_json_schema, get_param
+from .utils import db_update_queue, load_json_schema, get_param
 
 MAX_ATTEMPTS = get_param('queue_update_max_attempts')
 
 validate_jobset = load_json_schema('jobset')
 
 def lambda_handler(event, _context):
-  event = validate_jobset(event)
-  jobs = event['jobs']
-  msg_queue = deepcopy(jobs)
+  jobset = validate_jobset(event)
+  msg_queue = {}
 
   # Generate message queue
-  for job in jobs.values():
+  for job in jobset['jobs']:
     message = {
-      'Id': job['id'],
+      'Id': job['product_id'],
       'MessageBody': json.dumps(job)
     }
-    msg_queue[job['id']] = message
+    msg_queue[job['product_id']] = message
 
   # Send updates to SQS
   for i in range(MAX_ATTEMPTS):
     logging.debug('Sending updates; attempt %d/%d', i + 1, MAX_ATTEMPTS)
     res = db_update_queue.send_messages(
-      Entries=msg_queue.values(),
+      Entries=msg_queue.values()
     )
 
     for message in res['Successful']:

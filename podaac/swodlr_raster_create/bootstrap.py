@@ -2,7 +2,7 @@
 import json
 import logging
 import boto3
-from utils import get_param
+from .utils import get_param
 
 stepfunctions = boto3.client('stepfunctions')
 sf_arn = get_param('stepfunction_arn')

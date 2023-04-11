@@ -6,13 +6,16 @@
       "type": "string"
     },
     "cycle": {
-      "type": "nonNegativeInteger"
+      "type": "integer",
+      "minimum": 0
     },
     "pass": {
-      "type": "nonNegativeInteger"
+      "type": "integer",
+      "minimum": 0
     },
     "scene": {
-      "type": "nonNegativeInteger"
+      "type": "integer",
+      "minimum": 0
     },
     "output_granule_extent_flag": {
       "type": "boolean"
@@ -26,7 +29,7 @@
           "const": "UTM"
         },
         "raster_resolution": {
-          "type": "nonNegativeInteger",
+          "type": "integer",
           "enum": [
             100,
             125,
@@ -53,18 +56,18 @@
         }
       },
       "required": [
-        "utmZoneAdjust",
-        "mgrsBandAdjust"
+        "utm_zone_adjust",
+        "mgrs_band_adjust"
       ]
     },
     {
       "properties": {
-        "outputSamplingGridType": {
+        "output_sampling_grid_type": {
           "type": "string",
           "const": "GEO"
         },
-        "rasterResolution": {
-          "type": "positiveInteger",
+        "raster_resolution": {
+          "type": "integer",
           "enum": [
             3,
             4,
@@ -86,8 +89,8 @@
     "cycle",
     "pass",
     "scene",
-    "outputGranuleExtentFlag",
-    "outputSamplingGridType",
-    "rasterResolution"
+    "output_granule_extent_flag",
+    "output_sampling_grid_type",
+    "raster_resolution"
   ]
 }
