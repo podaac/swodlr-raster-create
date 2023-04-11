@@ -5,7 +5,7 @@ from .utils import (
     mozart_client, get_param, search_datasets, load_json_schema
 )
 
-STAGE           = __name__
+STAGE           = __name__.rsplit('.', 1)[1]
 DATASET_NAME    = 'SWOT_L2_HR_PIXCVec'
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
 
