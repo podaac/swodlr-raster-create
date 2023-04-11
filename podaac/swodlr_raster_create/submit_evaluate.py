@@ -1,13 +1,16 @@
 import json
 import logging
-from podaac.swodlr_raster_create.utils import (
+from uuid import uuid4
+from .utils import (
     mozart_client, get_param, search_datasets, load_json_schema
 )
 
+STAGE           = __name__
 DATASET_NAME    = 'SWOT_L2_HR_PIXCVec'
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
 
-validate_input = load_json_schema('input')
+validate_input  = load_json_schema('input')
+validate_jobset = load_json_schema('jobset')
 
 raster_eval_job_type = mozart_client.get_job_type(
     f'job-SUBMIT_L2_HR_Raster:{PCM_RELEASE_TAG}'
@@ -17,15 +20,18 @@ raster_eval_job_type.initialize()
 def lambda_handler(event, _context):
     logging.debug('Records received: %d', len(event['Records']))
 
-    jobs = {}
-    for record in event['Records']:
-        job = _process_record(record)
-        jobs[job['id']] = job
+    jobs = [_process_record(record) for record in event['Records']]
 
-    return {'jobs': jobs}
+    job_set = {'jobs': jobs}
+    job_set = validate_jobset(job_set)
+    return job_set
 
 def _process_record(record):
     body = validate_input(json.loads(record['body']))
+    output = {
+        'stage': STAGE,
+        'product_id': body['product_id']
+    }
 
     cycle = body['cycle']
     passe = body['pass']
@@ -36,7 +42,11 @@ def _process_record(record):
     granule = search_datasets(pixcvec_granule_name)
 
     if granule is None:
-        return None
+        output.update(
+            job_status = 'job-failed',
+            errors = ['Scene does not exist']
+        )
+        return output
 
     raster_eval_job_type.set_input_dataset(granule)
     job = raster_eval_job_type.submit_job('raster_evaluator_otello_submit')
@@ -45,21 +55,21 @@ def _process_record(record):
         job.job_id, cycle, passe, scene
     )
 
-    return {
-        'id': job.job_id,
-        'product_id': body['product_id'],
-        'status': 'job-queued',
-        'metadata': {
+    output.update(
+        job_id = job.job_id,
+        job_status = 'job-queued',
+        metadata = {
             'cycle': cycle,
             'pass': passe,
             'scene': scene,
             'output_granule_extent_flag': body['output_granule_extent_flag'],
             'output_sampling_grid_type': body['output_sampling_grid_type'],
             'raster_resolution': body['raster_resolution'],
-            'utm_zone_adjust': body.get('utm_zone_adjust', 0),
-            'mgrs_band_adjust': body.get('mgrs_band_adjust', 0)
+            'utm_zone_adjust': body.get('utm_zone_adjust'),
+            'mgrs_band_adjust': body.get('mgrs_band_adjust')
         }
-    }
+    )
+    return output
 
 
 def _scene_to_tile(scene_id):

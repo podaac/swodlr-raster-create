@@ -48,7 +48,7 @@ class Utils:
         CAUTION: THE SESSION OBJECT IS AUTHENTICATED. DO NOT USE THIS SESSION
         OUTSIDE OF THIS UTILITY CLASS OR CREDENTIALS MAY LEAK
         '''
-        if '_session' not in self:
+        if not hasattr(self, '_session'):
             ca_cert = self.get_param('sds_ca_cert')
             username = self.get_param('sds_username')
             password = self.get_param('sds_password')
@@ -66,7 +66,7 @@ class Utils:
 
         return self._session
 
-    def get_param(self, name, default=None):
+    def get_param(self, name):
         '''
         Retrieves a parameter from SSM or the environment depending on the
         environment
@@ -81,11 +81,11 @@ class Utils:
         Searches for datasets by id using a lazily created session, supporting
         wildcard searches by default
         '''
-        host = self.get_param('sds_host')
-        path = get_param('sds_grq_es_path')
-        index = get_param('sds_grq_es_index')
+        host  = self.get_param('sds_host')
+        path  = self.get_param('sds_grq_es_path')
+        index = self.get_param('sds_grq_es_index')
 
-        search_path = PurePath(path).joinpath(index, '_search')
+        search_path = PurePath(path, index, '_search')
         es_path = urljoin(host, search_path.name)
 
         session = self._get_session()
@@ -107,7 +107,9 @@ class Utils:
         return body['hits']['hits'][0]['_source']
 
     def load_json_schema(self, name):
-        path = Path(__file__, '..', '..', 'schemas', name).resolve()
+        path = Path(
+            __file__, '..', '..', '..', 'schemas', f'{name}.json'
+        ).resolve()
         with open(path, 'r') as f:
             return fastjsonschema.compile(json.load(f))
 

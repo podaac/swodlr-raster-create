@@ -1,9 +1,10 @@
 import logging
 import sds_statuses
-from utils import (
+from .utils import (
   get_param, mozart_client, load_json_schema, search_datasets
 )
 
+STAGE = __name__
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
 
 validate_jobset = load_json_schema('jobset')
@@ -12,15 +13,25 @@ raster_job_type = mozart_client.get_job_type(
 )
 raster_job_type.initialize()
 
-def lambda_handler(event, _context):
-  evaluate_jobs = validate_jobset(event)
-  raster_jobs = {}
 
-  for eval_job in evaluate_jobs.values():
+def lambda_handler(event, _context):
+    input_jobset = validate_jobset(event)
+
+    eval_jobset = input_jobset['jobs']
+    raster_jobs = [process_job(eval_job) for eval_job in eval_jobset['jobs']]
+
+    output = validate_jobset({'jobs': raster_jobs})
+    return output
+
+def process_job(eval_job):
     if eval_job['status'] not in sds_statuses.SUCCESS:
-      # Pass through fail statuses
-      raster_job[eval_job['id']] = eval_job
-      continue
+        # Pass through fail statuses
+        return eval_job
+
+    raster_job = {
+        'stage': STAGE,
+        'product_id': eval_job['product_id']
+    }
 
     state_config_id = mozart_client        \
         .get_job_by_id(eval_job['id'])     \
@@ -28,7 +39,11 @@ def lambda_handler(event, _context):
 
     state_config = search_datasets(state_config_id, False)
     if state_config is None:
-      raise RuntimeError('Unable to find state config; it should exist')
+      raster_job.update(
+        job_status='job-failed',
+        errors=['Unable to find state config from submit_evaluate stage']
+      )
+      return raster_job
 
     params = [
       'raster_resolution', 'output_sampling_grid_type',
@@ -44,14 +59,11 @@ def lambda_handler(event, _context):
 
     raster_job_type.set_input_dataset(state_config)
     raster_job_type.set_input_params(input_params)
-    job = raster_job_type.submit_job(tag='sciflo_raster_otello_submit')
+    sds_job = raster_job_type.submit_job(tag='sciflo_raster_otello_submit')
 
-    raster_job = {
-      'id': job['id'],
-      'product_id': eval_job['product_id'],
-      'status': 'job-queued',
-      'metadata': eval_job['metadata']
-    }
-    raster_jobs[raster_job['id']] = validate_jobset(raster_jobs)
-  
-  return raster_jobs
+    raster_job.update(
+        job_id = sds_job['id'],
+        job_status = 'job-queued',
+        metadata = eval_job['metadata']
+    )
+    return raster_job

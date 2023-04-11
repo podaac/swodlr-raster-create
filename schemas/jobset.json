@@ -1,37 +1,51 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "jobs": {
-      "type": "object",
-      "patternProperties": {
-        "^.*$": {
-          "id": {
-            "type": "string"
-          },
-          "product_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "traceback": {
+  "$defs": {
+    "Job": {
+      "properties": {
+        "product_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "job_status": {
+          "type": "string"
+        },
+        "stage": {
+          "type": "string"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
             "type": "string"
           }
+        },
+        "traceback": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object"
         }
       },
       "additionalProperties": false,
       "required": [
-        "id",
         "product_id",
-        "status"
+        "job_status",
+        "stage"
       ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "jobs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Job"
+      }
     },
     "waiting": {
       "type": "boolean"
-    },
-    "metadata": {
-      "type": "object"
     }
   },
   "additionalProperties": false,
