@@ -4,7 +4,7 @@ from .utils import (
   get_param, mozart_client, load_json_schema, search_datasets
 )
 
-STAGE = __name__
+STAGE           = __name__.rsplit('.', 1)[1]
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
 
 validate_jobset = load_json_schema('jobset')
