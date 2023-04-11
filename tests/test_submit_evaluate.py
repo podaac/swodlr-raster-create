@@ -92,14 +92,16 @@ class TestSubmitEvaluate(TestCase):
         ):
             results = submit_evaluate.lambda_handler(self.invalid_sqs, None)
 
-        # Assert that all the search results were returned
+        # Check that all the search results were returned
         self.assertEqual(len(dataset_results), 0)
 
-        # Assert that the job is properly rejected
+        # Check that the returned jobs are properly accepted/rejected
         for job in results['jobs']:
             if job['product_id'] == 'd8fa2f55-2290-42fb-9086-36fbcc5c00d0':
                 self.assertEqual(job['job_status'], 'job-failed')
                 self.assertEqual(job['errors'], ['Scene does not exist'])
+            else:
+                self.assertEqual(job['job_status'], 'job-queued')
 
     def tearDown(self):
         submit_evaluate.raster_eval_job_type.set_input_dataset.reset_mock()
