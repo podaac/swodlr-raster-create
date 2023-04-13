@@ -1,5 +1,5 @@
 import logging
-import sds_statuses
+from . import sds_statuses
 from .utils import (
   get_param, mozart_client, load_json_schema, search_datasets
 )
@@ -17,14 +17,13 @@ raster_job_type.initialize()
 def lambda_handler(event, _context):
     input_jobset = validate_jobset(event)
 
-    eval_jobset = input_jobset['jobs']
-    raster_jobs = [process_job(eval_job) for eval_job in eval_jobset['jobs']]
+    raster_jobs = [process_job(eval_job) for eval_job in input_jobset['jobs']]
 
     output = validate_jobset({'jobs': raster_jobs})
     return output
 
 def process_job(eval_job):
-    if eval_job['status'] not in sds_statuses.SUCCESS:
+    if eval_job['job_status'] not in sds_statuses.SUCCESS:
         # Pass through fail statuses
         return eval_job
 
@@ -34,7 +33,7 @@ def process_job(eval_job):
     }
 
     state_config_id = mozart_client        \
-        .get_job_by_id(eval_job['id'])     \
+        .get_job_by_id(eval_job['job_id'])     \
         .get_generated_products()[0]['id']
 
     state_config = search_datasets(state_config_id, False)
@@ -62,7 +61,7 @@ def process_job(eval_job):
     sds_job = raster_job_type.submit_job(tag='sciflo_raster_otello_submit')
 
     raster_job.update(
-        job_id = sds_job['id'],
+        job_id = sds_job.job_id,
         job_status = 'job-queued',
         metadata = eval_job['metadata']
     )
