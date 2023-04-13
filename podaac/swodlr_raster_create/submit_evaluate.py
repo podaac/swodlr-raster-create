@@ -1,13 +1,16 @@
 import json
 import logging
+from time import sleep
 from uuid import uuid4
 from .utils import (
-    mozart_client, get_param, search_datasets, load_json_schema
+    mozart_client, get_param, search_datasets, load_json_schema, submit_job
 )
 
 STAGE           = __name__.rsplit('.', 1)[1]
 DATASET_NAME    = 'SWOT_L2_HR_PIXCVec'
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
+MAX_ATTEMPTS    = int(get_param('sds_submit_max_attempts'))
+TIMEOUT         = int(get_param('sds_submit_timeout'))
 
 validate_input  = load_json_schema('input')
 validate_jobset = load_json_schema('jobset')
@@ -49,25 +52,37 @@ def _process_record(record):
         return output
 
     raster_eval_job_type.set_input_dataset(granule)
-    job = raster_eval_job_type.submit_job('raster_evaluator_otello_submit')
-    logging.info(
-        'Submitted - job id: %s, cycle: %d, pass: %d, scene: %s',
-        job.job_id, cycle, passe, scene
-    )
+    
+    for i in range(1, MAX_ATTEMPTS + 1):
+        try:
+            job = raster_eval_job_type.submit_job('raster_evaluator_otello_submit')
+
+            output.update(
+                job_id = job.job_id,
+                job_status = 'job-queued',
+                metadata = {
+                    'cycle': cycle,
+                    'pass': passe,
+                    'scene': scene,
+                    'output_granule_extent_flag': body['output_granule_extent_flag'],
+                    'output_sampling_grid_type': body['output_sampling_grid_type'],
+                    'raster_resolution': body['raster_resolution'],
+                    'utm_zone_adjust': body.get('utm_zone_adjust'),
+                    'mgrs_band_adjust': body.get('mgrs_band_adjust')
+                }
+            )
+            return output
+        except:
+            logging.exception(
+                'Job submission failed; attempt %d/%d',
+                i, MAX_ATTEMPTS
+            )
+    
+        sleep(TIMEOUT)
 
     output.update(
-        job_id = job.job_id,
-        job_status = 'job-queued',
-        metadata = {
-            'cycle': cycle,
-            'pass': passe,
-            'scene': scene,
-            'output_granule_extent_flag': body['output_granule_extent_flag'],
-            'output_sampling_grid_type': body['output_sampling_grid_type'],
-            'raster_resolution': body['raster_resolution'],
-            'utm_zone_adjust': body.get('utm_zone_adjust'),
-            'mgrs_band_adjust': body.get('mgrs_band_adjust')
-        }
+        job_status = 'job-failed',
+        errors = ['SDS failed to accept job']
     )
     return output
 

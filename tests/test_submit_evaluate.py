@@ -16,7 +16,9 @@ with (
     patch.dict(os.environ, {
         'SWODLR_ENV': 'dev',
         'SWODLR_sds_username': 'sds_username',
-        'SWODLR_sds_password': 'sds_password'
+        'SWODLR_sds_password': 'sds_password',
+        'SWODLR_sds_submit_max_attempts': '1',
+        'SWODLR_sds_submit_timeout': '0'
     })
 ):
     from podaac.swodlr_raster_create import submit_evaluate

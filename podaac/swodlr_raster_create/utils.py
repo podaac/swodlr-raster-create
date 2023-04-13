@@ -1,7 +1,9 @@
 '''Shared utilities for ingest-to-sds lambdas'''
 import json
 import sys
-from typing import Callable
+from time import sleep
+from typing import Any, Callable
+import logging
 from os import getenv
 from pathlib import Path, PurePath
 from tempfile import mkstemp
@@ -11,7 +13,7 @@ import boto3
 from dotenv import load_dotenv
 import fastjsonschema
 from mypy_boto3_sqs.service_resource import Queue
-from otello.mozart import Mozart
+from otello.mozart import Mozart, Job, JobType
 from requests import Session
 
 
@@ -81,14 +83,17 @@ class Utils:
         Searches for datasets by id using a lazily created session, supporting
         wildcard searches by default
         '''
-        host  = self.get_param('sds_host')
-        path  = self.get_param('sds_grq_es_path')
-        index = self.get_param('sds_grq_es_index')
+        if not hasattr(self, '_grq_es_path'):
+            host  = self.get_param('sds_host')
+            path  = self.get_param('sds_grq_es_path')
+            index = self.get_param('sds_grq_es_index')
 
-        search_path = PurePath(path, index, '_search')
-        es_path = urljoin(host, search_path.name)
+            search_path = str(PurePath(host, path, index, '_search'))
+            es_path = urljoin(host, search_path)
+            self._grq_es_path = es_path
 
         session = self._get_session()
+        es_path = self._grq_es_path
         query_type = 'wildcard' if wildcard else 'term'
 
         res = session.get(es_path, data = {
@@ -113,6 +118,26 @@ class Utils:
         with open(path, 'r') as f:
             return fastjsonschema.compile(json.load(f))
 
+    def submit_job(self, job_type, *args, **kwargs):
+        '''
+        Attempt to submit a job to the SDS and return the Job object. If an
+        exception is raised during submission, wait a specified timeout and try
+        again. If max attempts is reached, return None.
+        '''
+        max_attempts = int(self.get_param('sds_submit_max_attempts'))
+        timeout      = int(self.get_param('sds_submit_timeout'))
+
+        for i in range(max_attempts):
+            try:
+                return job_type.submit_job(*args, **kwargs)
+            except Exception:
+                logging.exception(
+                    'Job submission failed; attempt %d/%d', i, max_attempts
+                )
+                sleep(timeout)
+        return None
+
+
     @property
     def mozart_client(self):
         '''
@@ -132,6 +157,11 @@ class Utils:
 
             # pylint: disable=attribute-defined-outside-init
             self._mozart_client = Mozart(cfg, session=self._get_session())
+
+            # Monkeypatch to enable attempt-timeout-retry logic
+            _submit_job = JobType.submit_job
+            def submit_job(self, *args, max_attempts = None, timeout = None, **kwargs):
+                pass
 
         return self._mozart_client
 
@@ -154,6 +184,7 @@ db_update_queue: Queue
 get_param: Callable[[str, str], str]
 search_datasets: Callable[[str], str]
 load_json_schema: Callable[[str], Callable]
+submit_job: Callable[[JobType], Job | None]
 
 
 sys.modules[__name__] = Utils()

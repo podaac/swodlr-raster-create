@@ -15,9 +15,15 @@ def lambda_handler(event, _context):
       continue
 
     job_id = job['job_id']
-    job_info = mozart_client.get_job_by_id(job_id).get_info()
+    try:
+      job_info = mozart_client.get_job_by_id(job_id).get_info()
+    except:
+      logging.exception('Failed to get job info: %s', job_id)
+      waiting = True
+      continue
+
     job_status = job_info['status']
-    job['status'] = job_status
+    job['status'] = job_status  # Update job in JobSet
   
     if 'traceback' in job_info:
       job.update(
