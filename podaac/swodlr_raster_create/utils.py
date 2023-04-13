@@ -118,25 +118,6 @@ class Utils:
         with open(path, 'r') as f:
             return fastjsonschema.compile(json.load(f))
 
-    def submit_job(self, job_type, *args, **kwargs):
-        '''
-        Attempt to submit a job to the SDS and return the Job object. If an
-        exception is raised during submission, wait a specified timeout and try
-        again. If max attempts is reached, return None.
-        '''
-        max_attempts = int(self.get_param('sds_submit_max_attempts'))
-        timeout      = int(self.get_param('sds_submit_timeout'))
-
-        for i in range(max_attempts):
-            try:
-                return job_type.submit_job(*args, **kwargs)
-            except Exception:
-                logging.exception(
-                    'Job submission failed; attempt %d/%d', i, max_attempts
-                )
-                sleep(timeout)
-        return None
-
 
     @property
     def mozart_client(self):
@@ -157,11 +138,6 @@ class Utils:
 
             # pylint: disable=attribute-defined-outside-init
             self._mozart_client = Mozart(cfg, session=self._get_session())
-
-            # Monkeypatch to enable attempt-timeout-retry logic
-            _submit_job = JobType.submit_job
-            def submit_job(self, *args, max_attempts = None, timeout = None, **kwargs):
-                pass
 
         return self._mozart_client
 
@@ -184,7 +160,6 @@ db_update_queue: Queue
 get_param: Callable[[str, str], str]
 search_datasets: Callable[[str], str]
 load_json_schema: Callable[[str], Callable]
-submit_job: Callable[[JobType], Job | None]
 
 
 sys.modules[__name__] = Utils()
