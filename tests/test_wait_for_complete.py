@@ -17,7 +17,7 @@ class TestWaitForComplete(TestCase):
         test_status = 'job-started'
         
         with (
-            patch('otello.mozart.Mozart.get_job_by_id', spec=Job) as mock
+            patch('otello.mozart.Mozart.get_job_by_id') as mock
         ):
             mock().get_info.side_effect = lambda: {'status': test_status}
             result = wait_for_complete.lambda_handler(
@@ -38,7 +38,7 @@ class TestWaitForComplete(TestCase):
         test_traceback = 'It must be I want life to go on living.'
 
         with (
-            patch('otello.mozart.Mozart.get_job_by_id', spec=Job) as mock
+            patch('otello.mozart.Mozart.get_job_by_id') as mock
         ):
             mock().get_info.side_effect = lambda: {
                 'status': test_status,
