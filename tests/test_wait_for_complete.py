@@ -35,7 +35,11 @@ class TestWaitForComplete(TestCase):
 
     def test_failed(self):
         test_status = 'job-failed'
-        test_traceback = 'It must be I want life to go on living.'
+        test_traceback = \
+            '''The place is desert, and let whoso lurks
+            In silence, if in this he is aggrieved,
+            Break silence now or be forever silent.
+            Let him say why it should not be declared so.'''
 
         with (
             patch('otello.mozart.Mozart.get_job_by_id') as mock
@@ -55,8 +59,5 @@ class TestWaitForComplete(TestCase):
             self.assertEqual(result_job[field], waiting_job[field])
 
         self.assertEqual(result_job['job_status'], test_status)
-        self.assertEqual(
-            result_job['traceback'],
-            'It must be I want life to go on living.'
-        )
+        self.assertEqual(result_job['traceback'], test_traceback)
         self.assertEqual(result_job['errors'], ['SDS threw an error'])
