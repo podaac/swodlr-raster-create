@@ -1,42 +1,47 @@
 import logging
 from . import sds_statuses
-from .utils import mozart_client, load_schema
+from .utils import mozart_client, load_json_schema
 
-validate_jobset = load_schema('jobset')
+
+validate_jobset = load_json_schema('jobset')
+
 
 def lambda_handler(event, _context):
-  event = validate_jobset(event)
-  jobs = event['jobs']
-  waiting = False
+    jobset = validate_jobset(event)
+    jobs = jobset['jobs']
+    waiting = False
 
-  for job in event['jobs']:
-    if job['status'] in sds_statuses.SUCCESS or sds_statuses.FAIL:
-      logging.trace('Skipping %s; status: %s', job['id'], job['status'])
-      continue
+    for job in jobs:
+        if job['job_status'] not in sds_statuses.WAITING:
+            logging.debug(
+                'Skipping %s; status: %s', job['product_id'], job['job_status']
+            )
+            continue
 
-    job_id = job['job_id']
-    try:
-      job_info = mozart_client.get_job_by_id(job_id).get_info()
-    except:
-      logging.exception('Failed to get job info: %s', job_id)
-      waiting = True
-      continue
+        job_id = job['job_id']
+        try:
+            job_info = mozart_client.get_job_by_id(job_id).get_info()
+        except:
+            logging.exception('Failed to get job info: %s', job_id)
+            waiting = True
+            continue
 
-    job_status = job_info['status']
-    job['status'] = job_status  # Update job in JobSet
-  
-    if 'traceback' in job_info:
-      job.update(
-        traceback = job_info['traceback'],
-        errors = ['SDS threw an error']
-      )
-    elif job_status in sds_statuses.WAITING:
-      logging.info('Waiting on %s', job['id'])
-      waiting = True
+        job_status = job_info['status']
+        job['job_status'] = job_status  # Update job in JobSet
 
-  output = {'jobs': jobs}
-  if waiting:
-    output.update(waiting = waiting)
+        if 'traceback' in job_info:
+            job.update(
+                traceback=job_info['traceback'],
+                errors=['SDS threw an error']
+            )
 
-  output = validate_jobset(output)
-  return output
+        if job_status in sds_statuses.WAITING:
+            logging.info('Waiting on %s', job['job_id'])
+            waiting = True
+
+    output = {'jobs': jobs}
+    if waiting:
+        output.update(waiting=waiting)
+
+    output = validate_jobset(output)
+    return output

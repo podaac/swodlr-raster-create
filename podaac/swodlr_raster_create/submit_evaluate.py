@@ -1,9 +1,8 @@
 import json
 import logging
 from time import sleep
-from uuid import uuid4
 from .utils import (
-    mozart_client, get_param, search_datasets, load_json_schema, submit_job
+    mozart_client, get_param, search_datasets, load_json_schema
 )
 
 STAGE           = __name__.rsplit('.', 1)[1]
