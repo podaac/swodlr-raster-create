@@ -19,7 +19,7 @@ class TestWaitForComplete(TestCase):
         with (
             patch('otello.mozart.Mozart.get_job_by_id') as mock
         ):
-            mock().get_info.side_effect = lambda: {'status': test_status}
+            mock().get_info.return_value = {'status': test_status}
             result = wait_for_complete.lambda_handler(
                 deepcopy(self.waiting_jobset), None
             )
@@ -44,7 +44,7 @@ class TestWaitForComplete(TestCase):
         with (
             patch('otello.mozart.Mozart.get_job_by_id') as mock
         ):
-            mock().get_info.side_effect = lambda: {
+            mock().get_info.return_value = {
                 'status': test_status,
                 'traceback': test_traceback
             }
