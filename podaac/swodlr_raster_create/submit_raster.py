@@ -1,5 +1,7 @@
 import logging
 from time import sleep
+
+from requests import RequestException
 from . import sds_statuses
 from .utils import (
     get_param, mozart_client, load_json_schema, search_datasets
@@ -38,11 +40,21 @@ def process_job(eval_job):
     }
 
     state_config_id = mozart_client        \
-        .get_job_by_id(eval_job['job_id'])     \
+        .get_job_by_id(eval_job['job_id']) \
         .get_generated_products()[0]['id']
 
-    state_config = search_datasets(state_config_id, False)
+    try:
+        state_config = search_datasets(state_config_id, False)
+    except RequestException:
+        logging.exception('ES request failed')
+        raster_job.update(
+            job_status = 'job-failed',
+            errors = ['ES request failed']
+        )
+        return raster_job
+
     if state_config is None:
+        logging.error('State config is missing: %s', state_config_id)
         raster_job.update(
             job_status='job-failed',
             errors=['Unable to find state config from submit_evaluate stage']
