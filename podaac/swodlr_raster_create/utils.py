@@ -1,4 +1,5 @@
 '''Shared utilities for ingest-to-sds lambdas'''
+from importlib import resources
 import json
 import sys
 from time import sleep
@@ -112,12 +113,14 @@ class Utils:
         return body['hits']['hits'][0]['_source']
 
     def load_json_schema(self, name):
-        path = Path(
-            __file__, '..', '..', '..', 'schemas', f'{name}.json'
-        ).resolve()
-        with open(path, 'r') as f:
-            return fastjsonschema.compile(json.load(f))
+        schemas = resources.files('podaac.swodlr_raster_create.schemas')
+        schema_resource = schemas.joinpath(f'{name}.json')
 
+        if not schema_resource.is_file():
+            raise RuntimeError('Schema not found')
+
+        with schema_resource.open('r') as f:
+            return fastjsonschema.compile(json.load(f))
 
     @property
     def mozart_client(self):
