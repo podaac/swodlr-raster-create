@@ -1,14 +1,12 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
-BUNDLE_PLUGIN_INSTALLED=$(poetry self show plugins | grep 'poetry-plugin-bundle' | wc -l)
+BUNDLE_PLUGIN_INSTALLED=$(poetry self show plugins | (grep 'dpoetry-plugin-bundle' || true) | wc -l)
 if [ "$BUNDLE_PLUGIN_INSTALLED" -ne 1 ]; then
   echo "Poetry bundle plugin missing! - https://github.com/python-poetry/poetry-plugin-bundle"
   echo "Install the poetry bundle plugin with: poetry self add poetry-plugin-bundle"
   exit 1
 fi
-
-set -o pipefail
 
 PACKAGE_NAME=$(awk -F' = ' '{gsub(/"/,"");if($1=="name")print $2}' pyproject.toml)
 VERSION=$(poetry version -s)
