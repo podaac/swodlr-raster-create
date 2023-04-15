@@ -9,7 +9,7 @@ from podaac.swodlr_raster_create import wait_for_complete
 class TestWaitForComplete(TestCase):
     data_path = Path(__file__).parent.joinpath('data')
     waiting_jobset_path = data_path.joinpath('waiting_jobset.json')
-    with open(waiting_jobset_path, 'r') as f:
+    with waiting_jobset_path.open('r') as f:
         waiting_jobset = json.load(f)
 
 

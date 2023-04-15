@@ -35,9 +35,9 @@ class TestSubmitEvaluate(TestCase):
     data_path = Path(__file__).parent.joinpath('data')
     valid_sqs_path = data_path.joinpath('valid_sqs.json')
     invalid_sqs_path = data_path.joinpath('invalid_sqs.json')
-    with open(valid_sqs_path, encoding='utf-8') as f:
+    with valid_sqs_path.open('r') as f:
         valid_sqs = json.load(f)
-    with open(invalid_sqs_path, encoding='utf-8') as f:
+    with invalid_sqs_path.open('r') as f:
         invalid_sqs = json.load(f)
 
     def test_valid_submit(self):
