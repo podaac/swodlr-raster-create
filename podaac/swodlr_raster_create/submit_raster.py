@@ -33,7 +33,8 @@ def process_job(eval_job):
 
     raster_job = {
         'stage': STAGE,
-        'product_id': eval_job['product_id']
+        'product_id': eval_job['product_id'],
+        'metadata': eval_job['metadata']
     }
 
     state_config_id = mozart_client        \
@@ -74,8 +75,7 @@ def process_job(eval_job):
 
             raster_job.update(
                 job_id=sds_job.job_id,
-                job_status='job-queued',
-                metadata=eval_job['metadata']
+                job_status='job-queued'
             )
             return raster_job
         except:
