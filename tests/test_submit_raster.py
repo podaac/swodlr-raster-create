@@ -35,9 +35,9 @@ class TestSubmitRaster(TestCase):
     data_path = Path(__file__).parent.joinpath('data')
     failed_jobset_path = data_path.joinpath('failed_jobset.json')
     success_jobset_path = data_path.joinpath('success_jobset.json')
-    with open(failed_jobset_path, 'r') as f:
+    with failed_jobset_path.open('r') as f:
         failed_jobset = json.load(f)
-    with open(success_jobset_path, 'r') as f:
+    with success_jobset_path.open('r') as f:
         success_jobset = json.load(f)
 
     def test_failed_submit(self):

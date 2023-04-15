@@ -19,7 +19,7 @@ with (
 class TestQueueUpdate(TestCase):
     data_path = Path(__file__).parent.joinpath('data')
     success_jobset_path = data_path.joinpath('success_jobset.json')
-    with open(success_jobset_path, 'r') as f:
+    with success_jobset_path.open('r') as f:
         success_jobset = json.load(f)
 
     def test_success(self):
