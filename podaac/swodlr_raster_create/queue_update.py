@@ -1,9 +1,9 @@
 from copy import deepcopy
 import json
 import logging
-from .utils import db_update_queue, load_json_schema, get_param
+from .utils import update_queue, load_json_schema, get_param
 
-MAX_ATTEMPTS = get_param('queue_update_max_attempts')
+MAX_ATTEMPTS = int(get_param('update_queue_max_attempts'))
 
 validate_jobset = load_json_schema('jobset')
 
@@ -20,10 +20,10 @@ def lambda_handler(event, _context):
     msg_queue[job['product_id']] = message
 
   # Send updates to SQS
-  for i in range(MAX_ATTEMPTS):
-    logging.debug('Sending updates; attempt %d/%d', i + 1, MAX_ATTEMPTS)
-    res = db_update_queue.send_messages(
-      Entries=msg_queue.values()
+  for i in range(1, MAX_ATTEMPTS + 1):
+    logging.debug('Sending updates; attempt %d/%d', i, MAX_ATTEMPTS)
+    res = update_queue.send_messages(
+      Entries=list(msg_queue.values())
     )
 
     for message in res['Successful']:
@@ -31,7 +31,7 @@ def lambda_handler(event, _context):
 
     for message in res['Failed']:
       logging.error('Failed to send update: id: %s, code: %s, message: %s',
-        message['Id'], message['Code'], message['Message']
+        message['Id'], message['Code'], message.get('Message', '-')
       )
 
       if message['SenderFault']:
@@ -40,7 +40,9 @@ def lambda_handler(event, _context):
 
     # Warn when remaining after attempt - not a fail state yet
     if len(msg_queue) > 0:
-      logging.warn('Remaining messages in queue: %d', len(msg_queue))
+      logging.warning('Remaining messages in queue: %d', len(msg_queue))
+    else:
+      break
   
   # Max attempts reached - fail state
   if len(msg_queue) > 0:
