@@ -1,6 +1,8 @@
 import json
 import logging
 from time import sleep
+
+from requests import RequestException
 from .utils import (
     mozart_client, get_param, search_datasets, load_json_schema
 )
@@ -41,9 +43,19 @@ def _process_record(record):
     tile = _scene_to_tile(body['scene'])  # Josh: 3:<
 
     pixcvec_granule_name = f'{DATASET_NAME}_{cycle}_{passe}_{tile}_*'
-    granule = search_datasets(pixcvec_granule_name)
+
+    try:
+        granule = search_datasets(pixcvec_granule_name)
+    except RequestException:
+        logging.exception('ES request failed')
+        output.update(
+            job_status = 'job-failed',
+            errors = ['ES request failed']
+        )
+        return output
 
     if granule is None:
+        logging.error('ES search returned no results: %s', pixcvec_granule_name)
         output.update(
             job_status = 'job-failed',
             errors = ['Scene does not exist']
