@@ -142,21 +142,21 @@ class Utils:
         return self._mozart_client
 
     @property
-    def db_update_queue(self):
+    def update_queue(self):
         '''
         Lazily creates the db update queue resource
         '''
-        if not hasattr(self, '_db_update_queue'):
-            db_update_queue_url = self.get_param('db_update_queue_url')
+        if not hasattr(self, '_update_queue'):
+            update_queue_url = self.get_param('update_queue_url')
 
             sqs = boto3.resource('sqs')
-            self._db_update_queue = sqs.Queue(db_update_queue_url)
+            self._update_queue = sqs.Queue(update_queue_url)
         
-        return self._db_update_queue
+        return self._update_queue
 
 # Silence the linters
 mozart_client: Mozart
-db_update_queue: Queue
+update_queue: Queue
 get_param: Callable[[str, str], str]
 search_datasets: Callable[[str], str]
 load_json_schema: Callable[[str], Callable]
