@@ -42,7 +42,8 @@ class Utils:
         self._ssm_parameters = {}
 
         for param in parameters:
-            self._ssm_parameters[param['Name']] = param['Value']
+            name = param['Name'].removeprefix(self.SSM_PATH)
+            self._ssm_parameters[name] = param['Value']
 
     def _get_session(self):
         '''
@@ -156,6 +157,11 @@ class Utils:
             self._update_queue = sqs.Queue(update_queue_url)
         
         return self._update_queue
+
+    @property
+    def update_topic(self):
+        if not hasattr(self, '_update_topic'):
+            update_topic_arn = self.get_param('update_topic_arn')
 
 # Silence the linters
 mozart_client: Mozart
