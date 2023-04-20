@@ -1,22 +1,21 @@
 '''Shared utilities for ingest-to-sds lambdas'''
-from importlib import resources
 import json
 import sys
-from time import sleep
-from typing import Any, Callable
-import logging
+from importlib import resources
 from os import getenv
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from tempfile import mkstemp
+from typing import Callable
 from urllib.parse import urljoin
 
 import boto3
-from dotenv import load_dotenv
 import fastjsonschema
+from dotenv import load_dotenv
 from mypy_boto3_sqs.service_resource import Queue
-from otello.mozart import Mozart, Job, JobType
+from otello.mozart import Mozart
 from requests import Session
 
+import podaac.swodlr_raster_create
 
 load_dotenv()
 
@@ -86,8 +85,8 @@ class Utils:
         wildcard searches by default
         '''
         if not hasattr(self, '_grq_es_path'):
-            host  = self.get_param('sds_host')
-            path  = self.get_param('sds_grq_es_path')
+            host = self.get_param('sds_host')
+            path = self.get_param('sds_grq_es_path')
             index = self.get_param('sds_grq_es_index')
 
             search_path = str(PurePath(host, path, index, '_search'))
@@ -98,7 +97,7 @@ class Utils:
         es_path = self._grq_es_path
         query_type = 'wildcard' if wildcard else 'term'
 
-        res = session.get(es_path, data = {
+        res = session.get(es_path, data={
             'size': 1,
             'query': {
                 query_type: {
@@ -110,11 +109,11 @@ class Utils:
         body = res.json()
         if len(body['hits']['hits']) == 0:
             return None
-        
+
         return body['hits']['hits'][0]['_source']
 
     def load_json_schema(self, name):
-        schemas = resources.files('podaac.swodlr_raster_create.schemas')
+        schemas = resources.files(podaac.swodlr_raster_create).joinpath('schemas')
         schema_resource = schemas.joinpath(f'{name}.json')
 
         if not schema_resource.is_file():
@@ -155,7 +154,7 @@ class Utils:
 
             sqs = boto3.resource('sqs')
             self._update_queue = sqs.Queue(update_queue_url)
-        
+
         return self._update_queue
 
     @property
@@ -163,12 +162,12 @@ class Utils:
         if not hasattr(self, '_update_topic'):
             update_topic_arn = self.get_param('update_topic_arn')
 
+
 # Silence the linters
 mozart_client: Mozart
 update_queue: Queue
 get_param: Callable[[str, str], str]
 search_datasets: Callable[[str], str]
 load_json_schema: Callable[[str], Callable]
-
 
 sys.modules[__name__] = Utils()
