@@ -5,15 +5,14 @@ from unittest import TestCase
 from unittest.mock import patch
 
 with (
-    patch('boto3.resource'),
+    patch('boto3.client'),
     patch.dict(environ, {
         'SWODLR_ENV': 'dev',
-        'SWODLR_update_queue_url': 'queue_url',
-        'SWODLR_update_queue_max_attempts': '2'
+        'SWODLR_update_topic_arn': 'update_topic_arn',
+        'SWODLR_update_max_attempts': '2'
     })
 ):
-    from podaac.swodlr_raster_create import queue_update
-    from podaac.swodlr_raster_create.utils import update_queue
+    from podaac.swodlr_raster_create import notify_update
 
 
 class TestQueueUpdate(TestCase):
@@ -22,25 +21,32 @@ class TestQueueUpdate(TestCase):
     with success_jobset_path.open('r') as f:
         success_jobset = json.load(f)
 
+    sns = notify_update.sns
+
     def test_success(self):
-        update_queue.send_messages.return_value = {
+        self.sns.publish_batch.return_value = {
             'Successful': [{'Id': '24168643-1002-45f5-a059-0b5266bc28f3'}],
             'Failed': []
         }
-        queue_update.lambda_handler(self.success_jobset, None)
+        notify_update.lambda_handler(self.success_jobset, None)
 
-        self.assertEqual(update_queue.send_messages.call_count, 1)
-        entries = update_queue.send_messages.call_args.kwargs['Entries']
+        self.assertEqual(self.sns.publish_batch.call_count, 1)
+        self.assertEqual(
+            self.sns.publish_batch.call_args.kwargs['TopicArn'],
+            'update_topic_arn'
+        )
+
+        entries = self.sns.publish_batch.call_args.kwargs['PublishBatchRequestEntries']
         self.assertEqual(len(entries), 1)
 
         entry = entries[0]
         job = self.success_jobset['jobs'][0]
 
         self.assertEqual(entry['Id'], job['product_id'])
-        self.assertDictEqual(json.loads(entry['MessageBody']), job)
+        self.assertDictEqual(json.loads(entry['Message']), job)
 
     def test_retry(self):
-        update_queue.send_messages.side_effect = [
+        self.sns.publish_batch.side_effect = [
             {
                 'Successful': [],
                 'Failed': [{
@@ -55,22 +61,24 @@ class TestQueueUpdate(TestCase):
             },
         ]
 
-        queue_update.lambda_handler(self.success_jobset, None)
+        notify_update.lambda_handler(self.success_jobset, None)
 
-        self.assertEqual(update_queue.send_messages.call_count, 2)
+        self.assertEqual(self.sns.publish_batch.call_count, 2)
 
         job = self.success_jobset['jobs'][0]
-        calls = update_queue.send_messages.call_args_list
+        calls = self.sns.publish_batch.call_args_list
         for call in calls:
-            entries = call.kwargs['Entries']
+            self.assertEqual(call.kwargs['TopicArn'], 'update_topic_arn')
+            
+            entries = call.kwargs['PublishBatchRequestEntries']
             self.assertEqual(len(entries), 1)
 
             entry = entries[0]
             self.assertEqual(entry['Id'], job['product_id'])
-            self.assertDictEqual(json.loads(entry['MessageBody']), job)
+            self.assertDictEqual(json.loads(entry['Message']), job)
 
     def test_sender_fail(self):
-        update_queue.send_messages.return_value = {
+        self.sns.publish_batch.return_value = {
             'Successful': [],
             'Failed': [{
                 'Id': '24168643-1002-45f5-a059-0b5266bc28f3',
@@ -79,19 +87,24 @@ class TestQueueUpdate(TestCase):
             }]
         }
 
-        queue_update.lambda_handler(self.success_jobset, None)
+        notify_update.lambda_handler(self.success_jobset, None)
 
-        self.assertEqual(update_queue.send_messages.call_count, 1)
-        entries = update_queue.send_messages.call_args.kwargs['Entries']
+        self.assertEqual(self.sns.publish_batch.call_count, 1)
+        self.assertEqual(
+            self.sns.publish_batch.call_args.kwargs['TopicArn'],
+            'update_topic_arn'
+        )
+
+        entries = self.sns.publish_batch.call_args.kwargs['PublishBatchRequestEntries']
         self.assertEqual(len(entries), 1)
 
         entry = entries[0]
         job = self.success_jobset['jobs'][0]
         self.assertEqual(entry['Id'], job['product_id'])
-        self.assertDictEqual(json.loads(entry['MessageBody']), job)
+        self.assertDictEqual(json.loads(entry['Message']), job)
 
     def test_complete_fail(self):
-        update_queue.send_messages.return_value = {
+        self.sns.publish_batch.return_value = {
             'Successful': [],
             'Failed': [{
                 'Id': '24168643-1002-45f5-a059-0b5266bc28f3',
@@ -101,19 +114,21 @@ class TestQueueUpdate(TestCase):
         }
 
         with self.assertRaises(RuntimeError):
-            queue_update.lambda_handler(self.success_jobset, None)
+            notify_update.lambda_handler(self.success_jobset, None)
 
-        self.assertEqual(update_queue.send_messages.call_count, 2)
+        self.assertEqual(self.sns.publish_batch.call_count, 2)
 
         job = self.success_jobset['jobs'][0]
-        calls = update_queue.send_messages.call_args_list
+        calls = self.sns.publish_batch.call_args_list
         for call in calls:
-            entries = call.kwargs['Entries']
+            self.assertEqual(call.kwargs['TopicArn'], 'update_topic_arn')
+
+            entries = call.kwargs['PublishBatchRequestEntries']
             self.assertEqual(len(entries), 1)
 
             entry = entries[0]
             self.assertEqual(entry['Id'], job['product_id'])
-            self.assertDictEqual(json.loads(entry['MessageBody']), job)
+            self.assertDictEqual(json.loads(entry['Message']), job)
 
     def tearDown(self):
-        update_queue.reset_mock(side_effect=True)
+        self.sns.reset_mock(side_effect=True)
