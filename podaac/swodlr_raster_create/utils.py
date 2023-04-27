@@ -157,12 +157,6 @@ class Utils:
 
         return self._update_queue
 
-    @property
-    def update_topic(self):
-        if not hasattr(self, '_update_topic'):
-            update_topic_arn = self.get_param('update_topic_arn')
-
-
 # Silence the linters
 mozart_client: Mozart
 update_queue: Queue
