@@ -45,6 +45,16 @@ variable "sds_ca_cert_path" {
     default = "/etc/ssl/certs/JPLICA.Root.pem"
 }
 
+variable "sds_grq_es_index" {
+    type = string
+    default = "grq"
+}
+
+variable "sds_grq_es_path" {
+    type = string
+    default = "/grq_es"
+}
+
 variable "sds_submit_max_attempts" {
     type = number
     default = 5

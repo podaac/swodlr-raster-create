@@ -19,7 +19,7 @@ TIMEOUT = int(get_param('sds_submit_timeout'))
 
 validate_jobset = load_json_schema('jobset')
 raster_job_type = mozart_client.get_job_type(
-    f'job-SCIFLO_L2_HR_Raster:${PCM_RELEASE_TAG}'
+    f'job-SCIFLO_L2_HR_Raster:{PCM_RELEASE_TAG}'
 )
 raster_job_type.initialize()
 
