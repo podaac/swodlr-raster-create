@@ -137,7 +137,7 @@ class Utils:
         if not schema_resource.is_file():
             raise RuntimeError('Schema not found')
 
-        with schema_resource.open('r') as f:
+        with schema_resource.open('r', encoding='utf-8') as f:
             return fastjsonschema.compile(json.load(f))
 
     @property
