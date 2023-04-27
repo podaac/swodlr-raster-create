@@ -4,7 +4,7 @@ import sys
 from importlib import resources
 from os import getenv
 from pathlib import PurePath
-from tempfile import NamedTemporaryFile, mkstemp
+from tempfile import NamedTemporaryFile
 from typing import Callable
 from urllib.parse import urljoin
 
