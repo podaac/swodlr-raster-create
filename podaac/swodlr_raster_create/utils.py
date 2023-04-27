@@ -1,4 +1,4 @@
-'''Shared utilities for ingest-to-sds lambdas'''
+'''Shared utilities for raster-create lambdas'''
 import json
 import sys
 from importlib import resources
