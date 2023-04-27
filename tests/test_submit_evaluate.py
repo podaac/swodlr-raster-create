@@ -1,3 +1,4 @@
+'''Tests for the submit_evaluate module'''
 from collections import namedtuple
 import json
 import os
@@ -6,6 +7,8 @@ from unittest import TestCase
 from unittest.mock import patch
 from uuid import uuid4
 
+
+# pylint: disable=duplicate-code
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
@@ -26,21 +29,26 @@ with (
     MockJob = namedtuple('MockJob', ['job_id', 'status'])
     submit_evaluate.raster_eval_job_type.submit_job.side_effect = \
         lambda _self: MockJob(
-            job_id = str(uuid4()),
-            status = 'job-queued'
+            job_id=str(uuid4()),
+            status='job-queued'
         )
 
 
 class TestSubmitEvaluate(TestCase):
+    '''Tests for the submit_evaluate module'''
     data_path = Path(__file__).parent.joinpath('data')
     valid_sqs_path = data_path.joinpath('valid_sqs.json')
     invalid_sqs_path = data_path.joinpath('invalid_sqs.json')
-    with valid_sqs_path.open('r') as f:
+    with valid_sqs_path.open('r', encoding='utf-8') as f:
         valid_sqs = json.load(f)
-    with invalid_sqs_path.open('r') as f:
+    with invalid_sqs_path.open('r', encoding='utf-8') as f:
         invalid_sqs = json.load(f)
 
     def test_valid_submit(self):
+        '''
+        Test that three input records from an SQS message get translated to
+        three jobs in the outputted jobset
+        '''
         with (
             patch.dict(os.environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
@@ -77,13 +85,16 @@ class TestSubmitEvaluate(TestCase):
         self.assertEqual(len(input_dataset_calls), 3)
         self.assertEqual(len(submit_calls), 3)
 
-
     def test_no_pixcvec_error(self):
+        '''
+        Test that a jobset containing a invalid request fails gracefully while
+        still fulfilling the valid request
+        '''
         dataset_results = {
             'SWOT_L2_HR_PIXCVec_1_2_4L_*': {},
             'SWOT_L2_HR_PIXCVec_4_5_10L_*': None
         }
-        search_ds_mock.side_effect = lambda tile: dataset_results.pop(tile)
+        search_ds_mock.side_effect = dataset_results.pop
 
         with (
             patch.dict(os.environ, {
@@ -109,4 +120,4 @@ class TestSubmitEvaluate(TestCase):
         submit_evaluate.raster_eval_job_type.set_input_dataset.reset_mock()
         submit_evaluate.raster_eval_job_type.set_input_params.reset_mock()
         submit_evaluate.raster_eval_job_type.submit_job.reset_mock()
-        search_ds_mock.reset_mock(side_effect = True)
+        search_ds_mock.reset_mock(side_effect=True)

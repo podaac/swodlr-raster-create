@@ -1,3 +1,4 @@
+'''Lambda which sends each job in the jobset as a message to a SNS topic'''
 import json
 import logging
 import boto3
@@ -10,7 +11,11 @@ UPDATE_TOPIC_ARN = get_param('update_topic_arn')
 sns: SNSClient = boto3.client('sns')
 validate_jobset = load_json_schema('jobset')
 
-def lambda_handler(event, context):
+
+def lambda_handler(event, _context):
+    '''
+    Lambda handler which sends each job in a JobSet as a message to a SNS topic
+    '''
     jobset = validate_jobset(event)
     msg_queue = {}
 
@@ -32,7 +37,8 @@ def lambda_handler(event, context):
             del msg_queue[message['Id']]
 
         for message in res['Failed']:
-            logging.error('Failed to send update: id: %s, code: %s, message: %s',
+            logging.error(
+                'Failed to send update: id: %s, code: %s, message: %s',
                 message['Id'], message['Code'], message.get('Message', '-')
             )
 
@@ -45,7 +51,7 @@ def lambda_handler(event, context):
             logging.warning('Remaining messages in queue: %d', len(msg_queue))
         else:
             break
-    
+
     # Max attempts reached - fail state
     if len(msg_queue) > 0:
-        raise RuntimeError('Failed to send %d update messages', len(msg_queue))
+        raise RuntimeError(f'Failed to send {len(msg_queue)} update messages')

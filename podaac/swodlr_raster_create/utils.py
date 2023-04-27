@@ -65,7 +65,7 @@ class Utils:
                 cert_file.flush()
                 session.verify = cert_path
 
-            self._session = session
+            self._session = session  # noqa: E501 # pylint: disable=attribute-defined-outside-init
 
         return self._session
 
@@ -91,7 +91,7 @@ class Utils:
 
             search_path = str(PurePath(host, path, index, '_search'))
             es_path = urljoin(host, search_path)
-            self._grq_es_path = es_path
+            self._grq_es_path = es_path  # noqa: E501 # pylint: disable=attribute-defined-outside-init
 
         session = self._get_session()
         es_path = self._grq_es_path
@@ -113,7 +113,12 @@ class Utils:
         return body['hits']['hits'][0]['_source']
 
     def load_json_schema(self, name):
-        schemas = resources.files(podaac.swodlr_raster_create).joinpath('schemas')
+        '''
+        Load a json schema from the schema folder and return the compiled
+        schema
+        '''
+        schemas = resources.files(podaac.swodlr_raster_create) \
+            .joinpath('schemas')
         schema_resource = schemas.joinpath(f'{name}.json')
 
         if not schema_resource.is_file():
@@ -153,9 +158,10 @@ class Utils:
             update_queue_url = self.get_param('update_queue_url')
 
             sqs = boto3.resource('sqs')
-            self._update_queue = sqs.Queue(update_queue_url)
+            self._update_queue = sqs.Queue(update_queue_url)  # noqa: E501 # pylint: disable=attribute-defined-outside-init
 
         return self._update_queue
+
 
 # Silence the linters
 mozart_client: Mozart

@@ -1,3 +1,8 @@
+'''
+Lambda which accepts a evaluate jobset, utilizes the generated config from the
+evaluate job, submits a raster job to the SDS, and outputs a new jobset
+consisting of raster jobs
+'''
 import logging
 from time import sleep
 
@@ -20,6 +25,11 @@ raster_job_type.initialize()
 
 
 def lambda_handler(event, _context):
+    '''
+    Lambda handler which accepts an evaluate jobset, retrieves the
+    configuration from the evaluate jobs, submits the raster jobs, and outputs
+    a new raster jobset
+    '''
     input_jobset = validate_jobset(event)
 
     raster_jobs = [process_job(eval_job) for eval_job in input_jobset['jobs']]
@@ -29,6 +39,11 @@ def lambda_handler(event, _context):
 
 
 def process_job(eval_job):
+    '''
+    Takes a evaluate job from a jobset, retrieves the config from GRQ
+    ElasticSearch on the SDS, submits a raster job, and returns the raster job
+    object
+    '''
     if eval_job['job_status'] not in sds_statuses.SUCCESS:
         # Pass through fail statuses
         return eval_job
@@ -48,8 +63,8 @@ def process_job(eval_job):
     except RequestException:
         logging.exception('ES request failed')
         raster_job.update(
-            job_status = 'job-failed',
-            errors = ['ES request failed']
+            job_status='job-failed',
+            errors=['ES request failed']
         )
         return raster_job
 
@@ -90,7 +105,8 @@ def process_job(eval_job):
                 job_status='job-queued'
             )
             return raster_job
-        except:
+        # pylint: disable=duplicate-code
+        except Exception:  # pylint: disable=broad-exception-caught
             logging.exception(
                 'Job submission failed; attempt %d/%d',
                 i, MAX_ATTEMPTS
