@@ -1,3 +1,7 @@
+'''
+Lambda which retrieves the job statuses from the SDS and updates the waiting
+flag
+'''
 import logging
 from . import sds_statuses
 from .utils import mozart_client, load_json_schema
@@ -7,6 +11,11 @@ validate_jobset = load_json_schema('jobset')
 
 
 def lambda_handler(event, _context):
+    '''
+    Lambda handler which accepts a jobset, updates the statuses from the SDS,
+    appends a waiting flag if the jobset still has jobs that haven't completed,
+    and returns the updated jobset
+    '''
     jobset = validate_jobset(event)
     jobs = jobset['jobs']
     waiting = False
@@ -21,7 +30,7 @@ def lambda_handler(event, _context):
         job_id = job['job_id']
         try:
             job_info = mozart_client.get_job_by_id(job_id).get_info()
-        except:
+        except Exception:  # pylint: disable=broad-exception-caught
             logging.exception('Failed to get job info: %s', job_id)
             waiting = True
             continue

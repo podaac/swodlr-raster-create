@@ -1,3 +1,4 @@
+'''Tests for the submit_raster module'''
 from collections import namedtuple
 import json
 from os import environ
@@ -6,7 +7,7 @@ from unittest import TestCase
 from unittest.mock import patch
 from uuid import uuid4
 
-
+# pylint: disable=duplicate-code
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
@@ -14,6 +15,7 @@ with (
         'podaac.swodlr_raster_create.utils.search_datasets'
     ) as search_ds_mock,
     patch('otello.mozart.Mozart.get_job_type'),
+    # pylint: disable=duplicate-code
     patch.dict(environ, {
         'SWODLR_ENV': 'dev',
         'SWODLR_sds_username': 'sds_username',
@@ -27,36 +29,48 @@ with (
     MockJob = namedtuple('MockJob', ['job_id', 'status'])
     submit_raster.raster_job_type.submit_job.side_effect = \
         lambda tag: MockJob(
-            job_id = str(uuid4()),
-            status = 'job-queued'
+            job_id=str(uuid4()),
+            status='job-queued'
         )
 
+
 class TestSubmitRaster(TestCase):
+    '''Tests for the submit_raster module'''
     data_path = Path(__file__).parent.joinpath('data')
     failed_jobset_path = data_path.joinpath('failed_jobset.json')
     success_jobset_path = data_path.joinpath('success_jobset.json')
-    with failed_jobset_path.open('r') as f:
+    with failed_jobset_path.open('r', encoding='utf-8') as f:
         failed_jobset = json.load(f)
-    with success_jobset_path.open('r') as f:
+    with success_jobset_path.open('r', encoding='utf-8') as f:
         success_jobset = json.load(f)
 
     def test_failed_submit(self):
+        '''
+        Test that the module passes through failed jobs in a jobset unchanged
+        '''
         results = submit_raster.lambda_handler(self.failed_jobset, None)
 
         # Job should pass through unchanged
         self.assertDictEqual(results, self.failed_jobset)
 
     def test_success_submit(self):
+        '''
+        Tests that a valid evaluate job converts to a valid configuration which
+        is then utilized to submit a raster job to the SDS with input
+        translations and a jobset containing the new job is outputted carrying
+        over the previous metadata
+        '''
         dummy_dataset_id = 'DUMMY_DATASET'
         dummy_dataset = {'id': dummy_dataset_id}
-        def search_dataset_dummy(name, _wildcard):
+
+        def search_dataset_mock(name, _wildcard):
             self.assertEqual(
                 name, dummy_dataset_id,
                 'Wrong dataset name passed in'
             )
             return dummy_dataset
-    
-        search_ds_mock.side_effect = search_dataset_dummy
+
+        search_ds_mock.side_effect = search_dataset_mock
 
         with (
             patch('otello.mozart.Mozart.get_job_by_id') as get_job_by_id_mock,
@@ -88,9 +102,9 @@ class TestSubmitRaster(TestCase):
             .call_args_list[0]
         input_params_call = submit_raster.raster_job_type.set_input_params \
             .call_args_list[0]
-        
+
         self.assertEqual(input_dataset_call.args[0], dummy_dataset)
-        
+
         # Check that input transformations performed
         input_params = input_params_call.args[0]
         self.assertEqual(input_params['output_sampling_grid_type'], 'utm')
@@ -105,7 +119,6 @@ class TestSubmitRaster(TestCase):
         input_job_metadata = input_job['metadata']
         for name in param_names:
             self.assertEqual(input_params[name], input_job_metadata[name])
-
 
     def tearDown(self):
         submit_raster.raster_job_type.set_input_dataset.reset_mock()
