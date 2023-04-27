@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-BUNDLE_PLUGIN_INSTALLED=$(poetry self show plugins | (grep 'dpoetry-plugin-bundle' || true) | wc -l)
+BUNDLE_PLUGIN_INSTALLED=$(poetry self show plugins | (grep 'poetry-plugin-bundle' || true) | wc -l)
 if [ "$BUNDLE_PLUGIN_INSTALLED" -ne 1 ]; then
   echo "Poetry bundle plugin missing! - https://github.com/python-poetry/poetry-plugin-bundle"
   echo "Install the poetry bundle plugin with: poetry self add poetry-plugin-bundle"

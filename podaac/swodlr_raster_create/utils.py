@@ -4,39 +4,51 @@ import sys
 from importlib import resources
 from os import getenv
 from pathlib import PurePath
-from tempfile import mkstemp
+from tempfile import NamedTemporaryFile, mkstemp
 from typing import Callable
 from urllib.parse import urljoin
 
 import boto3
 import fastjsonschema
-from dotenv import load_dotenv
-from mypy_boto3_sqs.service_resource import Queue
 from otello.mozart import Mozart
 from requests import Session
 
 import podaac.swodlr_raster_create
 
-load_dotenv()
-
 
 class Utils:
     '''Utility functions implemented as a singleton'''
     APP_NAME = 'swodlr'
-    SSM_PATH = f'/service/{APP_NAME}/raster_create/'
+    SSM_PATH = f'/service/{APP_NAME}/raster-create/'
 
     def __init__(self):
         self.env = getenv('SWODLR_ENV', 'prod')
 
         if self.env == 'prod':
             self._load_params_from_ssm()
+        else:
+            from dotenv import load_dotenv  # noqa: E501 # pylint: disable=import-outside-toplevel
+            load_dotenv()
 
     def _load_params_from_ssm(self):
         ssm = boto3.client('ssm')
-        parameters = ssm.get_parameters_by_path(
-            path=Utils.SSM_PATH,
-            with_decryption=True
-        )['Parameters']
+
+        parameters = []
+        next_token = None
+        while True:
+            kwargs = {'NextToken': next_token} \
+                if next_token is not None else {}
+            res = ssm.get_parameters_by_path(
+                Path=Utils.SSM_PATH,
+                WithDecryption=True,
+                **kwargs
+            )
+
+            parameters.extend(res['Parameters'])
+            if 'NextToken' in res:
+                next_token = res['NextToken']
+            else:
+                break
 
         self._ssm_parameters = {}
 
@@ -60,10 +72,11 @@ class Utils:
             session.auth = (username, password)
 
             if ca_cert is not None:
-                cert_file, cert_path = mkstemp(text=True)
+                # pylint: disable=consider-using-with
+                cert_file = NamedTemporaryFile('w', delete=False)
                 cert_file.write(ca_cert)
                 cert_file.flush()
-                session.verify = cert_path
+                session.verify = cert_file.name
 
             self._session = session  # noqa: E501 # pylint: disable=attribute-defined-outside-init
 
@@ -97,7 +110,7 @@ class Utils:
         es_path = self._grq_es_path
         query_type = 'wildcard' if wildcard else 'term'
 
-        res = session.get(es_path, data={
+        res = session.get(es_path, json={
             'size': 1,
             'query': {
                 query_type: {
@@ -149,23 +162,9 @@ class Utils:
 
         return self._mozart_client
 
-    @property
-    def update_queue(self):
-        '''
-        Lazily creates the db update queue resource
-        '''
-        if not hasattr(self, '_update_queue'):
-            update_queue_url = self.get_param('update_queue_url')
-
-            sqs = boto3.resource('sqs')
-            self._update_queue = sqs.Queue(update_queue_url)  # noqa: E501 # pylint: disable=attribute-defined-outside-init
-
-        return self._update_queue
-
 
 # Silence the linters
 mozart_client: Mozart
-update_queue: Queue
 get_param: Callable[[str, str], str]
 search_datasets: Callable[[str], str]
 load_json_schema: Callable[[str], Callable]

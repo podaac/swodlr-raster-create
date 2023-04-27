@@ -1,7 +1,7 @@
 # -- Lambdas --
 resource "aws_lambda_function" "bootstrap" {
   function_name = "${local.service_prefix}-bootstrap"
-  handler = "podaac.swodlr_ingest_to_sds.bootstrap.lambda_handler"
+  handler = "podaac.swodlr_raster_create.bootstrap.lambda_handler"
 
   role = aws_iam_role.bootstrap.arn
   runtime = "python3.9"
@@ -12,9 +12,9 @@ resource "aws_lambda_function" "bootstrap" {
 
 resource "aws_lambda_function" "notify_update" {
   function_name = "${local.service_prefix}-notify_update"
-  handler = "podaac.swodlr_ingest_to_sds.notify_update.lambda_handler"
+  handler = "podaac.swodlr_raster_create.notify_update.lambda_handler"
 
-  role = aws_iam_role.lambda.arn
+  role = aws_iam_role.notify_update.arn
   runtime = "python3.9"
 
   filename = "${path.module}/../dist/${local.name}-${local.version}.zip"
@@ -23,7 +23,7 @@ resource "aws_lambda_function" "notify_update" {
 
 resource "aws_lambda_function" "submit_evaluate" {
   function_name = "${local.service_prefix}-submit_evaluate"
-  handler = "podaac.swodlr_ingest_to_sds.submit_evaluate.lambda_handler"
+  handler = "podaac.swodlr_raster_create.submit_evaluate.lambda_handler"
 
   role = aws_iam_role.lambda.arn
   runtime = "python3.9"
@@ -39,7 +39,7 @@ resource "aws_lambda_function" "submit_evaluate" {
 
 resource "aws_lambda_function" "submit_raster" {
   function_name = "${local.service_prefix}-submit_raster"
-  handler = "podaac.swodlr_ingest_to_sds.submit_raster.lambda_handler"
+  handler = "podaac.swodlr_raster_create.submit_raster.lambda_handler"
 
   role = aws_iam_role.lambda.arn
   runtime = "python3.9"
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "submit_raster" {
 
 resource "aws_lambda_function" "wait_for_complete" {
   function_name = "${local.service_prefix}-wait_for_complete"
-  handler = "podaac.swodlr_ingest_to_sds.wait_for_complete.lambda_handler"
+  handler = "podaac.swodlr_raster_create.wait_for_complete.lambda_handler"
 
   role = aws_iam_role.lambda.arn
   runtime = "python3.9"
@@ -180,6 +180,43 @@ resource "aws_iam_role" "lambda" {
   })
 }
 
+resource "aws_iam_role" "notify_update" {
+  name_prefix = "lambda"
+  path = "${local.service_path}/"
+
+  permissions_boundary = "arn:aws:iam::${local.account_id}:policy/NGAPShRoleBoundary"
+  managed_policy_arns = [
+    "arn:aws:iam::${local.account_id}:policy/NGAPProtAppInstanceMinimalPolicy",
+    aws_iam_policy.ssm_parameters_read.arn
+  ]
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+
+  inline_policy {
+    name = "NotifyUpdatePolicy"
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid = ""
+          Action = "sns:Publish"
+          Effect   = "Allow"
+          Resource = data.aws_sns_topic.product_update.arn
+        }
+      ]
+    })
+  }
+}
+
 # -- SSM Parameters --
 resource "aws_ssm_parameter" "sds_pcm_release_tag" {
   name  = "${local.service_path}/sds_pcm_release_tag"
@@ -214,6 +251,20 @@ resource "aws_ssm_parameter" "sds_ca_cert" {
   type = "SecureString"
   overwrite = true
   value = local.sds_ca_cert
+}
+
+resource "aws_ssm_parameter" "sds_grq_es_index" {
+  name = "${local.service_path}/sds_grq_es_index"
+  type = "String"
+  overwrite = true
+  value = var.sds_grq_es_index
+}
+
+resource "aws_ssm_parameter" "sds_grq_es_path" {
+  name = "${local.service_path}/sds_grq_es_path"
+  type = "String"
+  overwrite = true
+  value = var.sds_grq_es_path
 }
 
 resource "aws_ssm_parameter" "sds_submit_max_attempts" {
