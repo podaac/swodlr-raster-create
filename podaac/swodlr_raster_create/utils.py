@@ -114,7 +114,7 @@ class Utils:
             'size': 1,
             'query': {
                 query_type: {
-                    'dataset.keyword': dataset_id
+                    'id.keyword': dataset_id
                 }
             }
         })
