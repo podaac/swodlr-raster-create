@@ -28,7 +28,7 @@ with (
 
     MockJob = namedtuple('MockJob', ['job_id', 'status'])
     submit_evaluate.raster_eval_job_type.submit_job.side_effect = \
-        lambda _self: MockJob(
+        lambda tag: MockJob(
             job_id=str(uuid4()),
             status='job-queued'
         )
@@ -67,9 +67,9 @@ class TestSubmitEvaluate(TestCase):
 
         # Check that ES search call performed with proper transformations
         valid_searches = [
-            'SWOT_L2_HR_PIXCVec_1_2_4L_*',
-            'SWOT_L2_HR_PIXCVec_4_5_10L_*',
-            'SWOT_L2_HR_PIXCVec_7_8_16L_*'
+            'SWOT_L2_HR_PIXCVec_001_002_004L_*',
+            'SWOT_L2_HR_PIXCVec_004_005_010L_*',
+            'SWOT_L2_HR_PIXCVec_007_008_016L_*'
         ]
         for call in search_ds_mock.call_args_list:
             search = call.args[0]
@@ -91,8 +91,8 @@ class TestSubmitEvaluate(TestCase):
         still fulfilling the valid request
         '''
         dataset_results = {
-            'SWOT_L2_HR_PIXCVec_1_2_4L_*': {},
-            'SWOT_L2_HR_PIXCVec_4_5_10L_*': None
+            'SWOT_L2_HR_PIXCVec_001_002_004L_*': {},
+            'SWOT_L2_HR_PIXCVec_004_005_010L_*': None
         }
         search_ds_mock.side_effect = dataset_results.pop
 
