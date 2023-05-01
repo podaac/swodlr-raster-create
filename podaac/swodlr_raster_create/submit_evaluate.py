@@ -47,9 +47,8 @@ def _process_record(record):
         'product_id': body['product_id']
     }
 
-    cycle = body['cycle']
-    passe = body['pass']
-    scene = body['scene']
+    cycle = str(body['cycle']).rjust(3, '0')
+    passe = str(body['pass']).rjust(3, '0')
     tile = _scene_to_tile(body['scene'])  # Josh: 3:<
 
     pixcvec_granule_name = f'{DATASET_NAME}_{cycle}_{passe}_{tile}_*'
@@ -80,16 +79,16 @@ def _process_record(record):
     for i in range(1, MAX_ATTEMPTS + 1):
         try:
             job = raster_eval_job_type.submit_job(
-                'raster_evaluator_otello_submit'
+                tag='raster_evaluator_otello_submit'
             )
 
             output.update(
                 job_id=job.job_id,
                 job_status='job-queued',
                 metadata={
-                    'cycle': cycle,
-                    'pass': passe,
-                    'scene': scene,
+                    'cycle': body['cycle'],
+                    'pass': body['pass'],
+                    'scene': body['scene'],
                     'output_granule_extent_flag':
                         body['output_granule_extent_flag'],
                     'output_sampling_grid_type':
@@ -121,4 +120,5 @@ def _scene_to_tile(scene_id):
     Converts a scene id to the first tile id in the set
     TODO: REMOVE THIS ONCE THE SDS ACCEPTS EXPLICIT SCENE IDS
     '''
-    return f'{(scene_id * 2) - 2}L'
+    base = str((scene_id * 2) - 2).rjust(3, '0')
+    return f'{base}L'
