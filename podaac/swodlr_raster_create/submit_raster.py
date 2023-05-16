@@ -3,19 +3,20 @@ Lambda which accepts a evaluate jobset, utilizes the generated config from the
 evaluate job, submits a raster job to the SDS, and outputs a new jobset
 consisting of raster jobs
 '''
-import logging
 from time import sleep
 
 from requests import RequestException
 from . import sds_statuses
 from .utils import (
-    get_param, mozart_client, load_json_schema, search_datasets
+    get_logger, get_param, mozart_client, load_json_schema, search_datasets
 )
 
 STAGE = __name__.rsplit('.', 1)[1]
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
 MAX_ATTEMPTS = int(get_param('sds_submit_max_attempts'))
 TIMEOUT = int(get_param('sds_submit_timeout'))
+
+logger = get_logger(__name__)
 
 validate_jobset = load_json_schema('jobset')
 raster_job_type = mozart_client.get_job_type(
@@ -54,14 +55,15 @@ def process_job(eval_job):
         'metadata': eval_job['metadata']
     }
 
-    state_config_id = mozart_client        \
-        .get_job_by_id(eval_job['job_id']) \
-        .get_generated_products()[0]['id']
+    cycle = str(raster_job['metadata']['cycle']).rjust(3, '0')
+    passe = str(raster_job['metadata']['pass']).rjust(3, '0')
+    scene = str(raster_job['metadata']['scene']).rjust(3, '0')
+    state_config_id = f'L2_HR_Raster_{cycle}_{passe}_{scene}-state-config'
 
     try:
         state_config = search_datasets(state_config_id, False)
     except RequestException:
-        logging.exception('ES request failed')
+        logger.exception('ES request failed')
         raster_job.update(
             job_status='job-failed',
             errors=['ES request failed']
@@ -69,7 +71,7 @@ def process_job(eval_job):
         return raster_job
 
     if state_config is None:
-        logging.error('State config is missing: %s', state_config_id)
+        logger.error('State config is missing: %s', state_config_id)
         raster_job.update(
             job_status='job-failed',
             errors=['Unable to find state config from submit_evaluate stage']
@@ -107,7 +109,7 @@ def process_job(eval_job):
             return raster_job
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught
-            logging.exception(
+            logger.exception(
                 'Job submission failed; attempt %d/%d',
                 i, MAX_ATTEMPTS
             )

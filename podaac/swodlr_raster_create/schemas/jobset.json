@@ -15,6 +15,12 @@
         "stage": {
           "type": "string"
         },
+        "granules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "errors": {
           "type": "array",
           "items": {

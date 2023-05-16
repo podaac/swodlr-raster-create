@@ -3,12 +3,11 @@ Lambda which processes the SQS message for inputs, submits the job(s) to the
 SDS, and returns a jobset
 '''
 import json
-import logging
 from time import sleep
 
 from requests import RequestException
 from .utils import (
-    mozart_client, get_param, search_datasets, load_json_schema
+    mozart_client, get_logger, get_param, search_datasets, load_json_schema
 )
 
 STAGE = __name__.rsplit('.', 1)[1]
@@ -16,6 +15,8 @@ DATASET_NAME = 'SWOT_L2_HR_PIXCVec'
 PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
 MAX_ATTEMPTS = int(get_param('sds_submit_max_attempts'))
 TIMEOUT = int(get_param('sds_submit_timeout'))
+
+logger = get_logger(__name__)
 
 validate_input = load_json_schema('input')
 validate_jobset = load_json_schema('jobset')
@@ -31,7 +32,7 @@ def lambda_handler(event, _context):
     Lambda handler which accepts an SQS message, parses records as inputs,
     submits jobs to the SDS, and returns a jobset
     '''
-    logging.debug('Records received: %d', len(event['Records']))
+    logger.debug('Records received: %d', len(event['Records']))
 
     jobs = [_process_record(record) for record in event['Records']]
 
@@ -56,7 +57,7 @@ def _process_record(record):
     try:
         granule = search_datasets(pixcvec_granule_name)
     except RequestException:
-        logging.exception('ES request failed')
+        logger.exception('ES request failed')
         output.update(
             job_status='job-failed',
             errors=['ES request failed']
@@ -64,7 +65,7 @@ def _process_record(record):
         return output
 
     if granule is None:
-        logging.error(
+        logger.error(
             'ES search returned no results: %s',
             pixcvec_granule_name
         )
@@ -101,7 +102,7 @@ def _process_record(record):
             return output
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught
-            logging.exception(
+            logger.exception(
                 'Job submission failed; attempt %d/%d',
                 i, MAX_ATTEMPTS
             )
@@ -120,5 +121,5 @@ def _scene_to_tile(scene_id):
     Converts a scene id to the first tile id in the set
     TODO: REMOVE THIS ONCE THE SDS ACCEPTS EXPLICIT SCENE IDS
     '''
-    base = str((scene_id * 2) - 2).rjust(3, '0')
+    base = str(scene_id * 2).rjust(3, '0')
     return f'{base}L'
