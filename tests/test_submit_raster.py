@@ -60,7 +60,7 @@ class TestSubmitRaster(TestCase):
         translations and a jobset containing the new job is outputted carrying
         over the previous metadata
         '''
-        dummy_dataset_id = 'DUMMY_DATASET'
+        dummy_dataset_id = 'L2_HR_Raster_001_002_003-state-config'
         dummy_dataset = {'id': dummy_dataset_id}
 
         def search_dataset_mock(name, _wildcard):
@@ -73,15 +73,12 @@ class TestSubmitRaster(TestCase):
         search_ds_mock.side_effect = search_dataset_mock
 
         with (
-            patch('otello.mozart.Mozart.get_job_by_id') as get_job_by_id_mock,
             patch.dict(environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
                 'SWODLR_sds_grq_es_path': '/grq_es',
                 'SWODLR_sds_grq_es_index': 'grq'
             })
         ):
-            get_job_by_id_mock().get_generated_products.side_effect = \
-                lambda: [{'id': dummy_dataset_id}]
             results = submit_raster.lambda_handler(self.success_jobset, None)
 
         input_job = self.success_jobset['jobs'][0]
