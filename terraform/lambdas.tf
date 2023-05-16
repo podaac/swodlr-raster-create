@@ -21,6 +21,22 @@ resource "aws_lambda_function" "notify_update" {
   source_code_hash = filebase64sha256("${path.module}/../dist/${local.name}-${local.version}.zip")
 }
 
+resource "aws_lambda_function" "publish_data" {
+  function_name = "${local.service_prefix}-publish_data"
+  handler = "podaac.swodlr_raster_create.publish_data.lambda_handler"
+
+  role = aws_iam_role.publish_data.arn
+  runtime = "python3.9"
+
+  filename = "${path.module}/../dist/${local.name}-${local.version}.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/${local.name}-${local.version}.zip")
+
+  vpc_config {
+    security_group_ids = [aws_security_group.default.id]
+    subnet_ids = data.aws_subnets.private.ids
+  }
+}
+
 resource "aws_lambda_function" "submit_evaluate" {
   function_name = "${local.service_prefix}-submit_evaluate"
   handler = "podaac.swodlr_raster_create.submit_evaluate.lambda_handler"
@@ -217,7 +233,65 @@ resource "aws_iam_role" "notify_update" {
   }
 }
 
+resource "aws_iam_role" "publish_data" {
+  name_prefix = "publish_data"
+  path = "${local.service_path}/"
+
+  permissions_boundary = "arn:aws:iam::${local.account_id}:policy/NGAPShRoleBoundary"
+  managed_policy_arns = [
+    "arn:aws:iam::${local.account_id}:policy/NGAPProtAppInstanceMinimalPolicy",
+    aws_iam_policy.ssm_parameters_read.arn,
+    aws_iam_policy.lambda_networking.arn
+  ]
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+
+  inline_policy {
+    name = "PublishDataPolicy"
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid = "AllowSDSRead"
+          Action = "s3:GetObject"
+          Effect   = "Allow"
+          Resource = "arn:aws:s3:::${var.sds_rs_bucket}"
+        },
+        {
+          Sid = "AllowPublishWrite"
+          Action = "s3:PutObject"
+          Effect   = "Allow"
+          Resource = "arn:aws:s3:::${var.publish_bucket}"
+        }
+      ]
+    })
+  }
+}
+
 # -- SSM Parameters --
+resource "aws_ssm_parameter" "log_level" {
+  name  = "${local.service_path}/log_level"
+  type  = "String"
+  overwrite = true
+  value = var.log_level
+}
+
+resource "aws_ssm_parameter" "publish_bucket" {
+  name  = "${local.service_path}/publish_bucket"
+  type  = "String"
+  overwrite = true
+  value = var.publish_bucket
+}
+
 resource "aws_ssm_parameter" "sds_pcm_release_tag" {
   name  = "${local.service_path}/sds_pcm_release_tag"
   type  = "String"

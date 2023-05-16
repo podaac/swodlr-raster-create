@@ -69,3 +69,16 @@ variable "update_max_attempts" {
     type = number
     default = 5
 }
+
+variable "sds_rs_bucket" {
+    type = string
+}
+
+variable "publish_bucket" {
+    type = string
+}
+
+variable "log_level" {
+    type = string
+    default = "INFO"
+}
