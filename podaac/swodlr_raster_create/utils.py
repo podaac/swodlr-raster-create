@@ -1,5 +1,6 @@
 '''Shared utilities for raster-create lambdas'''
 import json
+import logging
 import sys
 from importlib import resources
 from os import getenv
@@ -125,6 +126,18 @@ class Utils:
 
         return body['hits']['hits'][0]['_source']
 
+    def get_logger(self, name):
+        '''
+        Creates a logger for a requestor with a global log level defined from
+        parameters
+        '''
+        logger = logging.getLogger(name)
+
+        log_level = getattr(logging, self.get_param('log_level')) \
+            if self.get_param('log_level') is not None else logging.INFO
+        logger.setLevel(log_level)
+        return logger
+
     def load_json_schema(self, name):
         '''
         Load a json schema from the schema folder and return the compiled
@@ -165,6 +178,7 @@ class Utils:
 
 # Silence the linters
 mozart_client: Mozart
+get_logger: Callable[[str], logging.Logger]
 get_param: Callable[[str, str], str]
 search_datasets: Callable[[str], str]
 load_json_schema: Callable[[str], Callable]
