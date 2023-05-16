@@ -33,13 +33,19 @@ resource "aws_sfn_state_machine" "raster_create" {
           ]
           Next = "TimeoutEvaluate"
         }]
-        Default = "SubmitRaster"
+        Default = "NotifyEvaluateUpdate"
       }
 
       TimeoutEvaluate = {
         Type = "Wait"
         Seconds = 60
         Next = "WaitForEvaluateComplete"
+      }
+
+      NotifyEvaluateUpdate = {
+        Type = "Task"
+        Resource = aws_lambda_function.notify_update.arn
+        Next = "SubmitRaster"
       }
 
       SubmitRaster = {
@@ -69,7 +75,7 @@ resource "aws_sfn_state_machine" "raster_create" {
           ]
           Next = "TimeoutRaster"
         }]
-        Default = "NotifyUpdate"
+        Default = "PublishData"
       }
 
       TimeoutRaster = {
@@ -78,14 +84,16 @@ resource "aws_sfn_state_machine" "raster_create" {
         Next = "WaitForRasterComplete"
       }
 
-      NotifyUpdate = {
+      PublishData = {
         Type = "Task"
-        Resource = aws_lambda_function.notify_update.arn
-        Next = "Done"
+        Resource = aws_lambda_function.publish_data.arn
+        Next = "NotifyRasterUpdate"
       }
 
-      Done = {
-        Type = "Succeed"
+      NotifyRasterUpdate = {
+        Type = "Task"
+        Resource = aws_lambda_function.notify_update.arn
+        End = true
       }
     }
   })
@@ -122,6 +130,7 @@ resource "aws_iam_role" "sfn" {
         Effect   = "Allow"
         Resource = [
           aws_lambda_function.notify_update.arn,
+          aws_lambda_function.publish_data.arn,
           aws_lambda_function.submit_evaluate.arn,
           aws_lambda_function.submit_raster.arn,
           aws_lambda_function.wait_for_complete.arn

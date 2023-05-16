@@ -16,4 +16,5 @@ data "aws_sqs_queue" "product_create" {
 resource "aws_lambda_event_source_mapping" "product_create_queue" {
   event_source_arn = data.aws_sqs_queue.product_create.arn
   function_name = aws_lambda_function.bootstrap.arn
+  batch_size = 1  # Disable premature optimizations for now
 }
