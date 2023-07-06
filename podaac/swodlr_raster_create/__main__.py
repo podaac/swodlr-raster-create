@@ -21,6 +21,7 @@ def main():
     parser.add_argument('sleep_duration')
 
     args = parser.parse_args()
+    sleep_duration = int(args.sleep_duration)
 
     with open(args.job_file, 'r', encoding='utf-8') as f:
         job = json.load(f)
@@ -32,8 +33,9 @@ def main():
         )
         logging.info('Sent SQS message; id: %s', res['MessageId'])
 
-        logging.info('Sleeping for %d seconds', args.sleep_duration)
-        sleep(int(args.sleep_duration))
+
+        logging.info('Sleeping for %d seconds', sleep_duration)
+        sleep(sleep_duration)
 
 
 if __name__ == '__main__':
