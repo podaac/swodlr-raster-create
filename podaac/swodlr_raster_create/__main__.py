@@ -3,6 +3,7 @@ import logging
 from argparse import ArgumentParser
 import json
 import boto3
+from time import sleep
 
 logging.basicConfig(level=logging.INFO)
 sqs = boto3.client('sqs')
@@ -17,17 +18,22 @@ def main():
 
     parser.add_argument('queue_url')
     parser.add_argument('job_file')
+    parser.add_argument('sleep_duration')
 
     args = parser.parse_args()
 
     with open(args.job_file, 'r', encoding='utf-8') as f:
         job = json.load(f)
 
-    res = sqs.send_message(
-        QueueUrl=args.queue_url,
-        MessageBody=json.dumps(job)
-    )
-    logging.info('Sent SQS message; id: %s', res['MessageId'])
+    while True:
+        res = sqs.send_message(
+            QueueUrl=args.queue_url,
+            MessageBody=json.dumps(job)
+        )
+        logging.info('Sent SQS message; id: %s', res['MessageId'])
+
+        logging.info('Sleeping for %d seconds', args.sleep_duration)
+        sleep(int(args.sleep_duration))
 
 
 if __name__ == '__main__':
