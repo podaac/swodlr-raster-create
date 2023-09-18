@@ -12,7 +12,7 @@ from podaac.swodlr_common.utilities import BaseUtilities
 
 class Utilities(BaseUtilities):
     '''Utility functions implemented as a singleton'''
-    APP_NAME     = 'swodlr'
+    APP_NAME = 'swodlr'
     SERVICE_NAME = 'raster-create'
     SCHEMAS_PATH = Path(__file__, '..', 'schemas')
 
@@ -79,5 +79,6 @@ class Utilities(BaseUtilities):
             self._mozart_client = Mozart(cfg, session=self._get_sds_session())
 
         return self._mozart_client
+
 
 utils = Utilities()

@@ -24,8 +24,13 @@ raster_job_type = utils.mozart_client.get_job_type(
 )
 raster_job_type.initialize()
 
+
 @job_handler
 def handle_job(eval_job):
+    '''
+    Handler which retrieves the configuration for the evaluate job,
+    submits the raster job, and outputs a new raster job object
+    '''
     if eval_job['job_status'] not in sds_statuses.SUCCESS:
         # Pass through fail statuses
         return eval_job

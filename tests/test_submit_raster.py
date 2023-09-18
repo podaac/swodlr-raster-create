@@ -74,7 +74,7 @@ class TestSubmitRaster(TestCase):
                 'SWODLR_sds_grq_es_index': 'grq'
             }),
             patch(
-                'podaac.swodlr_raster_create.utilities.Utilities.search_datasets'
+                'podaac.swodlr_raster_create.utilities.Utilities.search_datasets'  # noqa: E501
             ) as search_ds_mock
         ):
             search_ds_mock.side_effect = search_dataset_mock
@@ -93,11 +93,13 @@ class TestSubmitRaster(TestCase):
         self.assertEqual(job['metadata'], input_job['metadata'])
 
         # Check Otello calls performed
+        # pylint: disable=no-member
         submit_raster.raster_job_type.submit_job.assert_called_once()
         input_dataset_call = submit_raster.raster_job_type.set_input_dataset \
             .call_args_list[0]
         input_params_call = submit_raster.raster_job_type.set_input_params \
             .call_args_list[0]
+        # pylint: enable=no-member
 
         self.assertEqual(input_dataset_call.args[0], dummy_dataset)
 
@@ -117,6 +119,8 @@ class TestSubmitRaster(TestCase):
             self.assertEqual(input_params[name], input_job_metadata[name])
 
     def tearDown(self):
+        # pylint: disable=no-member
         submit_raster.raster_job_type.set_input_dataset.reset_mock()
         submit_raster.raster_job_type.set_input_params.reset_mock()
         submit_raster.raster_job_type.submit_job.reset_mock()
+        # pylint: enable=no-member

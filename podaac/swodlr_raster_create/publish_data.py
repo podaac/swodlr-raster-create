@@ -17,6 +17,13 @@ logger = utils.get_logger(__name__)
 
 @job_handler
 def handle_job(job):
+    '''
+    Job handler that takes a job, retrieves the job's products, searches
+    through the products' buckets for accepted files by file extension, copies
+    the files from the SDS bucket to the publication bucket, and then appends
+    the S3 URIs to the job object
+    '''
+
     if job['job_status'] not in sds_statuses.SUCCESS:
         return job
 

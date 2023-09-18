@@ -15,6 +15,9 @@ sns: SNSClient = boto3.client('sns')
 
 @bulk_job_handler
 def handle_jobs(jobs):
+    '''
+    Handler which sends each job in a JobSet as a message to a SNS topic
+    '''
     msg_queue = {}
 
     for job in jobs:

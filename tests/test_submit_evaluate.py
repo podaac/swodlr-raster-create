@@ -78,9 +78,9 @@ class TestSubmitEvaluate(TestCase):
 
         # Check Otello calls performed
         input_dataset_calls = submit_evaluate.raster_eval_job_type \
-            .set_input_dataset.call_args_list
+            .set_input_dataset.call_args_list  # pylint: disable=no-member
         submit_calls = submit_evaluate.raster_eval_job_type.submit_job \
-            .call_args_list
+            .call_args_list  # pylint: disable=no-member
 
         self.assertEqual(len(input_dataset_calls), 3)
         self.assertEqual(len(submit_calls), 3)
@@ -120,6 +120,8 @@ class TestSubmitEvaluate(TestCase):
                 self.assertEqual(job['job_status'], 'job-queued')
 
     def tearDown(self):
+        # pylint: disable=no-member
         submit_evaluate.raster_eval_job_type.set_input_dataset.reset_mock()
         submit_evaluate.raster_eval_job_type.set_input_params.reset_mock()
         submit_evaluate.raster_eval_job_type.submit_job.reset_mock()
+        # pylint: enable=no-member
