@@ -2,25 +2,22 @@
 import json
 import boto3
 from mypy_boto3_sns import SNSClient
-from .utils import get_logger, get_param, load_json_schema
+from podaac.swodlr_common.decorators import bulk_job_handler
+from .utilities import utils
 
-MAX_ATTEMPTS = int(get_param('update_max_attempts'))
-UPDATE_TOPIC_ARN = get_param('update_topic_arn')
+MAX_ATTEMPTS = int(utils.get_param('update_max_attempts'))
+UPDATE_TOPIC_ARN = utils.get_param('update_topic_arn')
 
-logger = get_logger(__name__)
+logger = utils.get_logger(__name__)
 
 sns: SNSClient = boto3.client('sns')
-validate_jobset = load_json_schema('jobset')
 
 
-def lambda_handler(event, _context):
-    '''
-    Lambda handler which sends each job in a JobSet as a message to a SNS topic
-    '''
-    jobset = validate_jobset(event)
+@bulk_job_handler
+def handle_jobs(jobs):
     msg_queue = {}
 
-    for job in jobset['jobs']:
+    for job in jobs:
         message = {
             'Id': job['product_id'],
             'Message': json.dumps(job, separators=(',', ':'))
@@ -57,4 +54,4 @@ def lambda_handler(event, _context):
     if len(msg_queue) > 0:
         raise RuntimeError(f'Failed to send {len(msg_queue)} update messages')
 
-    return jobset
+    return jobs

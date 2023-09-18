@@ -6,22 +6,21 @@ import json
 from time import sleep
 
 from requests import RequestException
-from .utils import (
-    mozart_client, get_logger, get_param, search_datasets, load_json_schema
-)
+
+from .utilities import utils
 
 STAGE = __name__.rsplit('.', 1)[1]
 DATASET_NAME = 'SWOT_L2_HR_PIXCVec'
-PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
-MAX_ATTEMPTS = int(get_param('sds_submit_max_attempts'))
-TIMEOUT = int(get_param('sds_submit_timeout'))
+PCM_RELEASE_TAG = utils.get_param('sds_pcm_release_tag')
+MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
+TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
-logger = get_logger(__name__)
+logger = utils.get_logger(__name__)
 
-validate_input = load_json_schema('input')
-validate_jobset = load_json_schema('jobset')
+validate_input = utils.load_json_schema('input')
+validate_jobset = utils.load_json_schema('jobset')
 
-raster_eval_job_type = mozart_client.get_job_type(
+raster_eval_job_type = utils.mozart_client.get_job_type(
     f'job-SUBMIT_L2_HR_Raster:{PCM_RELEASE_TAG}'
 )
 raster_eval_job_type.initialize()
@@ -55,7 +54,7 @@ def _process_record(record):
     pixcvec_granule_name = f'{DATASET_NAME}_{cycle}_{passe}_{tile}_*'
 
     try:
-        granule = search_datasets(pixcvec_granule_name)
+        granule = utils.search_datasets(pixcvec_granule_name)
     except RequestException:
         logger.exception('ES request failed')
         output.update(
