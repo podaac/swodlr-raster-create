@@ -11,9 +11,6 @@ from uuid import uuid4
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
-    patch(
-        'podaac.swodlr_raster_create.utils.search_datasets'
-    ) as search_ds_mock,
     patch('otello.mozart.Mozart.get_job_type'),
     # pylint: disable=duplicate-code
     patch.dict(environ, {
@@ -70,15 +67,17 @@ class TestSubmitRaster(TestCase):
             )
             return dummy_dataset
 
-        search_ds_mock.side_effect = search_dataset_mock
-
         with (
             patch.dict(environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
                 'SWODLR_sds_grq_es_path': '/grq_es',
                 'SWODLR_sds_grq_es_index': 'grq'
-            })
+            }),
+            patch(
+                'podaac.swodlr_raster_create.utilities.Utilities.search_datasets'
+            ) as search_ds_mock
         ):
+            search_ds_mock.side_effect = search_dataset_mock
             results = submit_raster.lambda_handler(self.success_jobset, None)
 
         input_job = self.success_jobset['jobs'][0]
@@ -121,4 +120,3 @@ class TestSubmitRaster(TestCase):
         submit_raster.raster_job_type.set_input_dataset.reset_mock()
         submit_raster.raster_job_type.set_input_params.reset_mock()
         submit_raster.raster_job_type.submit_job.reset_mock()
-        search_ds_mock.reset_mock(side_effect=True)
