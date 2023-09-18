@@ -12,6 +12,7 @@ resource "aws_lambda_function" "bootstrap" {
 
 resource "aws_lambda_function" "notify_update" {
   function_name = "${local.service_prefix}-notify_update"
+  timeout = 30
   handler = "podaac.swodlr_raster_create.notify_update.lambda_handler"
 
   role = aws_iam_role.notify_update.arn
@@ -23,6 +24,7 @@ resource "aws_lambda_function" "notify_update" {
 
 resource "aws_lambda_function" "publish_data" {
   function_name = "${local.service_prefix}-publish_data"
+  timeout = 30
   handler = "podaac.swodlr_raster_create.publish_data.lambda_handler"
 
   role = aws_iam_role.publish_data.arn
@@ -39,6 +41,7 @@ resource "aws_lambda_function" "publish_data" {
 
 resource "aws_lambda_function" "submit_evaluate" {
   function_name = "${local.service_prefix}-submit_evaluate"
+  timeout = 30
   handler = "podaac.swodlr_raster_create.submit_evaluate.lambda_handler"
 
   role = aws_iam_role.lambda.arn
@@ -55,6 +58,7 @@ resource "aws_lambda_function" "submit_evaluate" {
 
 resource "aws_lambda_function" "submit_raster" {
   function_name = "${local.service_prefix}-submit_raster"
+  timeout = 30
   handler = "podaac.swodlr_raster_create.submit_raster.lambda_handler"
 
   role = aws_iam_role.lambda.arn
@@ -71,6 +75,7 @@ resource "aws_lambda_function" "submit_raster" {
 
 resource "aws_lambda_function" "wait_for_complete" {
   function_name = "${local.service_prefix}-wait_for_complete"
+  timeout = 30
   handler = "podaac.swodlr_raster_create.wait_for_complete.lambda_handler"
 
   role = aws_iam_role.lambda.arn
