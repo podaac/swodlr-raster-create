@@ -6,44 +6,30 @@ consisting of raster jobs
 from time import sleep
 
 from requests import RequestException
-from . import sds_statuses
-from .utils import (
-    get_logger, get_param, mozart_client, load_json_schema, search_datasets
-)
+from podaac.swodlr_common.decorators import job_handler
+from podaac.swodlr_common import sds_statuses
+
+from .utilities import utils
 
 STAGE = __name__.rsplit('.', 1)[1]
-PCM_RELEASE_TAG = get_param('sds_pcm_release_tag')
-MAX_ATTEMPTS = int(get_param('sds_submit_max_attempts'))
-TIMEOUT = int(get_param('sds_submit_timeout'))
+PCM_RELEASE_TAG = utils.get_param('sds_pcm_release_tag')
+MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
+TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
-logger = get_logger(__name__)
+logger = utils.get_logger(__name__)
 
-validate_jobset = load_json_schema('jobset')
-raster_job_type = mozart_client.get_job_type(
+validate_jobset = utils.load_json_schema('jobset')
+raster_job_type = utils.mozart_client.get_job_type(
     f'job-SCIFLO_L2_HR_Raster:{PCM_RELEASE_TAG}'
 )
 raster_job_type.initialize()
 
 
-def lambda_handler(event, _context):
+@job_handler
+def handle_job(eval_job):
     '''
-    Lambda handler which accepts an evaluate jobset, retrieves the
-    configuration from the evaluate jobs, submits the raster jobs, and outputs
-    a new raster jobset
-    '''
-    input_jobset = validate_jobset(event)
-
-    raster_jobs = [process_job(eval_job) for eval_job in input_jobset['jobs']]
-
-    output = validate_jobset({'jobs': raster_jobs})
-    return output
-
-
-def process_job(eval_job):
-    '''
-    Takes a evaluate job from a jobset, retrieves the config from GRQ
-    ElasticSearch on the SDS, submits a raster job, and returns the raster job
-    object
+    Handler which retrieves the configuration for the evaluate job,
+    submits the raster job, and outputs a new raster job object
     '''
     if eval_job['job_status'] not in sds_statuses.SUCCESS:
         # Pass through fail statuses
@@ -61,7 +47,7 @@ def process_job(eval_job):
     state_config_id = f'L2_HR_Raster_{cycle}_{passe}_{scene}-state-config'
 
     try:
-        state_config = search_datasets(state_config_id, False)
+        state_config = utils.search_datasets(state_config_id, False)
     except RequestException:
         logger.exception('ES request failed')
         raster_job.update(
