@@ -2,10 +2,10 @@
 import json
 import logging
 import boto3
-from .utils import get_param
+from .utilities import utils
 
 stepfunctions = boto3.client('stepfunctions')
-sf_arn = get_param('stepfunction_arn')
+sf_arn = utils.get_param('stepfunction_arn')
 
 
 def lambda_handler(event, _context):

@@ -4,64 +4,61 @@ from pathlib import PurePath
 from urllib.parse import urlunsplit, urlparse
 import boto3
 from mypy_boto3_s3 import S3Client
-from . import sds_statuses
-from .utils import get_logger, get_param, mozart_client, load_json_schema
+from podaac.swodlr_common import sds_statuses
+from podaac.swodlr_common.decorators import job_handler
+from .utilities import utils
 
 ACCEPTED_EXTS = {'nc'}
-PUBLISH_BUCKET = get_param('publish_bucket')
+PUBLISH_BUCKET = utils.get_param('publish_bucket')
 
 s3: S3Client = boto3.client('s3')
-validate_jobset = load_json_schema('jobset')
-logger = get_logger(__name__)
+logger = utils.get_logger(__name__)
 
 
-def lambda_handler(event, _context):
+@job_handler
+def handle_job(job):
     '''
-    Lambda handler that takes an input jobset, retrieves a job's products,
-    searches through the products' buckets for accepted files by file
-    extension, and copies the files from the SDS bucket to the publication
-    bucket
+    Job handler that takes a job, retrieves the job's products, searches
+    through the products' buckets for accepted files by file extension, copies
+    the files from the SDS bucket to the publication bucket, and then appends
+    the S3 URIs to the job object
     '''
-    jobset = validate_jobset(event)
 
-    for job in jobset['jobs']:
-        if job['job_status'] not in sds_statuses.SUCCESS:
-            continue
+    if job['job_status'] not in sds_statuses.SUCCESS:
+        return job
 
-        mozart_job = mozart_client.get_job_by_id(job['job_id'])
-        products = mozart_job.get_generated_products()
+    mozart_job = utils.mozart_client.get_job_by_id(job['job_id'])
+    products = mozart_job.get_generated_products()
 
-        granules = _find_granules(products)
-        s3_urls = []
+    granules = _find_granules(products)
+    s3_urls = []
 
+    logger.debug(
+        'Extracted granules (%s): %s',
+        job['product_id'], granules
+    )
+
+    for granule in granules:
+        key = joinpath(granule['collection'], granule['filename'])
         logger.debug(
-            'Extracted granules (%s): %s',
-            job['product_id'], granules
+            'Key (%s): %s',
+            job['product_id'], key
         )
 
-        for granule in granules:
-            key = joinpath(granule['collection'], granule['filename'])
-            logger.debug(
-                'Key (%s): %s',
-                job['product_id'], key
-            )
+        logger.debug('Bucket: %s', PUBLISH_BUCKET)
+        logger.info('Upload starting: %s', granule['filename'])
+        s3.copy(
+            CopySource=granule['source'],
+            Bucket=PUBLISH_BUCKET,
+            Key=key
+        )
+        logger.info('Upload finished: %s', granule['filename'])
 
-            logger.debug('Bucket: %s', PUBLISH_BUCKET)
-            logger.info('Upload starting: %s', granule['filename'])
-            s3.copy(
-                CopySource=granule['source'],
-                Bucket=PUBLISH_BUCKET,
-                Key=key
-            )
-            logger.info('Upload finished: %s', granule['filename'])
-
-            url = urlunsplit(('s3', PUBLISH_BUCKET, key, '', ''))
-            s3_urls.append(url)
+        url = urlunsplit(('s3', PUBLISH_BUCKET, key, '', ''))
+        s3_urls.append(url)
 
         job['granules'] = s3_urls
-
-    jobset = validate_jobset(jobset)
-    return jobset
+        return job
 
 
 def _find_granules(products):

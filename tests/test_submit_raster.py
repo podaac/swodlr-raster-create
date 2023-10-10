@@ -11,9 +11,6 @@ from uuid import uuid4
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
-    patch(
-        'podaac.swodlr_raster_create.utils.search_datasets'
-    ) as search_ds_mock,
     patch('otello.mozart.Mozart.get_job_type'),
     # pylint: disable=duplicate-code
     patch.dict(environ, {
@@ -70,15 +67,17 @@ class TestSubmitRaster(TestCase):
             )
             return dummy_dataset
 
-        search_ds_mock.side_effect = search_dataset_mock
-
         with (
             patch.dict(environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
                 'SWODLR_sds_grq_es_path': '/grq_es',
                 'SWODLR_sds_grq_es_index': 'grq'
-            })
+            }),
+            patch(
+                'podaac.swodlr_raster_create.utilities.Utilities.search_datasets'  # noqa: E501
+            ) as search_ds_mock
         ):
+            search_ds_mock.side_effect = search_dataset_mock
             results = submit_raster.lambda_handler(self.success_jobset, None)
 
         input_job = self.success_jobset['jobs'][0]
@@ -94,11 +93,13 @@ class TestSubmitRaster(TestCase):
         self.assertEqual(job['metadata'], input_job['metadata'])
 
         # Check Otello calls performed
+        # pylint: disable=no-member
         submit_raster.raster_job_type.submit_job.assert_called_once()
         input_dataset_call = submit_raster.raster_job_type.set_input_dataset \
             .call_args_list[0]
         input_params_call = submit_raster.raster_job_type.set_input_params \
             .call_args_list[0]
+        # pylint: enable=no-member
 
         self.assertEqual(input_dataset_call.args[0], dummy_dataset)
 
@@ -118,7 +119,8 @@ class TestSubmitRaster(TestCase):
             self.assertEqual(input_params[name], input_job_metadata[name])
 
     def tearDown(self):
+        # pylint: disable=no-member
         submit_raster.raster_job_type.set_input_dataset.reset_mock()
         submit_raster.raster_job_type.set_input_params.reset_mock()
         submit_raster.raster_job_type.submit_job.reset_mock()
-        search_ds_mock.reset_mock(side_effect=True)
+        # pylint: enable=no-member

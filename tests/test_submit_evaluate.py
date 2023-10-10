@@ -12,9 +12,6 @@ from uuid import uuid4
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
-    patch(
-        'podaac.swodlr_raster_create.utils.search_datasets'
-    ) as search_ds_mock,
     patch('otello.mozart.Mozart.get_job_type'),
     patch.dict(os.environ, {
         'SWODLR_ENV': 'dev',
@@ -54,7 +51,10 @@ class TestSubmitEvaluate(TestCase):
                 'SWODLR_sds_host': 'http://sds-host.test/',
                 'SWODLR_sds_grq_es_path': '/grq_es',
                 'SWODLR_sds_grq_es_index': 'grq'
-            })
+            }),
+            patch(
+                'podaac.swodlr_raster_create.utilities.utils.search_datasets'
+            ) as search_ds_mock
         ):
             results = submit_evaluate.lambda_handler(self.valid_sqs, None)
 
@@ -78,9 +78,9 @@ class TestSubmitEvaluate(TestCase):
 
         # Check Otello calls performed
         input_dataset_calls = submit_evaluate.raster_eval_job_type \
-            .set_input_dataset.call_args_list
+            .set_input_dataset.call_args_list  # pylint: disable=no-member
         submit_calls = submit_evaluate.raster_eval_job_type.submit_job \
-            .call_args_list
+            .call_args_list  # pylint: disable=no-member
 
         self.assertEqual(len(input_dataset_calls), 3)
         self.assertEqual(len(submit_calls), 3)
@@ -94,15 +94,18 @@ class TestSubmitEvaluate(TestCase):
             'SWOT_L2_HR_PIXCVec_001_002_006L_*': {},
             'SWOT_L2_HR_PIXCVec_004_005_012L_*': None
         }
-        search_ds_mock.side_effect = dataset_results.pop
 
         with (
             patch.dict(os.environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
                 'SWODLR_sds_grq_es_path': '/grq_es',
                 'SWODLR_sds_grq_es_index': 'grq'
-            })
+            }),
+            patch(
+                'podaac.swodlr_raster_create.utilities.utils.search_datasets'
+            ) as search_ds_mock,
         ):
+            search_ds_mock.side_effect = dataset_results.pop
             results = submit_evaluate.lambda_handler(self.invalid_sqs, None)
 
         # Check that all the search results were returned
@@ -117,7 +120,8 @@ class TestSubmitEvaluate(TestCase):
                 self.assertEqual(job['job_status'], 'job-queued')
 
     def tearDown(self):
+        # pylint: disable=no-member
         submit_evaluate.raster_eval_job_type.set_input_dataset.reset_mock()
         submit_evaluate.raster_eval_job_type.set_input_params.reset_mock()
         submit_evaluate.raster_eval_job_type.submit_job.reset_mock()
-        search_ds_mock.reset_mock(side_effect=True)
+        # pylint: enable=no-member

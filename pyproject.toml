@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "swodlr-raster-create"
-version = "0.0.2-alpha5"
+version = "0.0.2-alpha6"
 description = ""
 authors = ["podaac-tva <podaac-tva@jpl.nasa.gov>"]
 license = "Apache-2.0"
@@ -13,6 +13,7 @@ otello = {git = "https://github.com/hysds/otello.git", rev = "develop"}
 requests = "^2.28.2"
 fastjsonschema = "^2.16.3"
 boto3-stubs-lite = {extras = ["s3", "sns"], version = "^1.26.127"}
+swodlr-common = {git = "https://github.com/podaac/swodlr-common-py.git", rev = "0.1.1-alpha5"}
 
 [tool.poetry.group.dev.dependencies]
 boto3 = "^1.26.92"
