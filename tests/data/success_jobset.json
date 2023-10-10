@@ -10,11 +10,11 @@
         "cycle": 1,
         "pass": 2,
         "scene": 3,
-        "raster_resolution": null,
+        "raster_resolution": 100,
         "output_sampling_grid_type": "UTM",
         "output_granule_extent_flag": true,
-        "utm_zone_adjust": null,
-        "mgrs_band_adjust": null
+        "utm_zone_adjust": 0,
+        "mgrs_band_adjust": 0
       }
     }
   ]

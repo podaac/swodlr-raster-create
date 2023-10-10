@@ -84,7 +84,7 @@ def process_job(eval_job):
     ]
     input_params = {
         param: eval_job['metadata'][param]
-        for param in passthru_params
+        for param in passthru_params if eval_job['metadata'][param] is not None
     }
 
     # Input param conversions
