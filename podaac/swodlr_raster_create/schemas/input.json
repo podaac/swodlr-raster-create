@@ -31,7 +31,9 @@
         "raster_resolution": {
           "type": "integer",
           "enum": [
+            90,
             100,
+            120,
             125,
             200,
             250,
