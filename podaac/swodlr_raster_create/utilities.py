@@ -70,9 +70,11 @@ class Utilities(BaseUtilities):
         '''
         if not hasattr(self, '_mozart_client'):
             host = self.get_param('sds_host')
+            username = self.get_param('sds_username')
             cfg = {
                 'host': host,
-                'auth': True
+                'auth': True,
+                'username': username
             }
 
             # pylint: disable=attribute-defined-outside-init
