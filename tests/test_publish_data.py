@@ -66,7 +66,7 @@ class TestPublishData(TestCase):
         self.assertEqual(len(granules), 1)
 
         granule_uri_match = re.fullmatch(
-            r's3://publish_bucket/(test-dataset/24168643-1002-45f5-a059-0b5266bc28f3/\d+/test\.nc)',  # noqa: E501
+            r's3://publish_bucket/(test-dataset/24168643-1002-45f5-a059-0b5266bc28f3/\d+/test\.nc)',  # pylint: disable=line-too-long # noqa: E501
             granules[0]
         )
         self.assertIsNotNone(granule_uri_match)
