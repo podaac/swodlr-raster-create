@@ -1,6 +1,7 @@
 '''Lambda which publishes resulting SDS data to a S3 bucket'''
 from os.path import join as joinpath
 from pathlib import PurePath
+from time import time
 from urllib.parse import urlunsplit, urlparse
 import boto3
 from mypy_boto3_s3 import S3Client
@@ -31,6 +32,7 @@ def handle_job(job):
     products = mozart_job.get_generated_products()
 
     granules = _find_granules(products)
+    current_time = str(int(time()))
     s3_urls = []
 
     logger.debug(
@@ -39,7 +41,9 @@ def handle_job(job):
     )
 
     for granule in granules:
-        key = joinpath(granule['collection'], granule['filename'])
+        key = joinpath(
+            granule['collection'], job['product_id'], current_time, granule['filename']
+        )
         logger.debug(
             'Key (%s): %s',
             job['product_id'], key
