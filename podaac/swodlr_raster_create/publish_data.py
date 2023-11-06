@@ -42,7 +42,10 @@ def handle_job(job):
 
     for granule in granules:
         key = joinpath(
-            granule['collection'], job['product_id'], current_time, granule['filename']
+            granule['collection'],
+            job['product_id'],
+            current_time,
+            granule['filename']
         )
         logger.debug(
             'Key (%s): %s',
