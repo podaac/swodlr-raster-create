@@ -2,6 +2,7 @@
 import json
 from os import environ
 from pathlib import Path
+import re
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -63,8 +64,12 @@ class TestPublishData(TestCase):
 
         granules = result['jobs'][0]['granules']
         self.assertEqual(len(granules), 1)
-        self.assertEqual(granules[0],
-                         's3://publish_bucket/test-dataset/test.nc')
+
+        granule_uri_match = re.fullmatch(
+            r's3://publish_bucket/(test-dataset/24168643-1002-45f5-a059-0b5266bc28f3/\d+/test\.nc)',  # pylint: disable=line-too-long # noqa: E501
+            granules[0]
+        )
+        self.assertIsNotNone(granule_uri_match)
 
         expected_copy_source = {
             'Bucket': 'sds_bucket',
@@ -73,5 +78,5 @@ class TestPublishData(TestCase):
         publish_data.s3.copy.assert_called_once_with(
             CopySource=expected_copy_source,
             Bucket='publish_bucket',
-            Key='test-dataset/test.nc'
+            Key=granule_uri_match.group(1)
         )
