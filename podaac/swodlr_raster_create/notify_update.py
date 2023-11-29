@@ -39,7 +39,7 @@ def handle_jobs(jobs):
 
         for message in res['Failed']:
             logger.error(
-                'Failed to send update: id: %s, code: %s, message: %s',
+                'Failed to send update: product_id: %s, code: %s, message: %s',
                 message['Id'], message['Code'], message.get('Message', '-')
             )
 

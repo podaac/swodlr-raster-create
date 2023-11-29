@@ -16,8 +16,6 @@ PCM_RELEASE_TAG = utils.get_param('sds_pcm_release_tag')
 MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
 TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
-logger = utils.get_logger(__name__)
-
 validate_jobset = utils.load_json_schema('jobset')
 raster_job_type = utils.mozart_client.get_job_type(
     f'job-SCIFLO_L2_HR_Raster:{PCM_RELEASE_TAG}'
@@ -26,12 +24,14 @@ raster_job_type.initialize()
 
 
 @job_handler
-def handle_job(eval_job):
+def handle_job(eval_job, job_logger):
     '''
     Handler which retrieves the configuration for the evaluate job,
     submits the raster job, and outputs a new raster job object
     '''
     if eval_job['job_status'] not in sds_statuses.SUCCESS:
+        job_logger.debug(
+            f'Passing through job: product_id={eval_job["product_id"]}')
         # Pass through fail statuses
         return eval_job
 
@@ -49,7 +49,7 @@ def handle_job(eval_job):
     try:
         state_config = utils.search_datasets(state_config_id, False)
     except RequestException:
-        logger.exception('ES request failed')
+        job_logger.exception('ES request failed')
         raster_job.update(
             job_status='job-failed',
             errors=['ES request failed']
@@ -57,7 +57,7 @@ def handle_job(eval_job):
         return raster_job
 
     if state_config is None:
-        logger.error('State config is missing: %s', state_config_id)
+        job_logger.error('State config is missing: %s', state_config_id)
         raster_job.update(
             job_status='job-failed',
             errors=['Unable to find state config from submit_evaluate stage']
@@ -95,7 +95,7 @@ def handle_job(eval_job):
             return raster_job
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception(
+            job_logger.exception(
                 'Job submission failed; attempt %d/%d',
                 i, MAX_ATTEMPTS
             )

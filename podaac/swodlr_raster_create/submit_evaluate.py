@@ -102,8 +102,8 @@ def _process_record(record):
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception(
-                'Job submission failed; attempt %d/%d',
-                i, MAX_ATTEMPTS
+                'Job submission failed - attempt %d/%d; product_id=%s',
+                i, MAX_ATTEMPTS, output['product_id']
             )
 
         sleep(TIMEOUT)

@@ -13,11 +13,10 @@ ACCEPTED_EXTS = {'nc'}
 PUBLISH_BUCKET = utils.get_param('publish_bucket')
 
 s3: S3Client = boto3.client('s3')
-logger = utils.get_logger(__name__)
 
 
 @job_handler
-def handle_job(job):
+def handle_job(job, job_logger):
     '''
     Job handler that takes a job, retrieves the job's products, searches
     through the products' buckets for accepted files by file extension, copies
@@ -35,7 +34,7 @@ def handle_job(job):
     current_time = str(int(time()))
     s3_urls = []
 
-    logger.debug(
+    job_logger.debug(
         'Extracted granules (%s): %s',
         job['product_id'], granules
     )
@@ -47,19 +46,19 @@ def handle_job(job):
             current_time,
             granule['filename']
         )
-        logger.debug(
+        job_logger.debug(
             'Key (%s): %s',
             job['product_id'], key
         )
 
-        logger.debug('Bucket: %s', PUBLISH_BUCKET)
-        logger.info('Upload starting: %s', granule['filename'])
+        job_logger.debug('Bucket: %s', PUBLISH_BUCKET)
+        job_logger.info('Upload starting: %s', granule['filename'])
         s3.copy(
             CopySource=granule['source'],
             Bucket=PUBLISH_BUCKET,
             Key=key
         )
-        logger.info('Upload finished: %s', granule['filename'])
+        job_logger.info('Upload finished: %s', granule['filename'])
 
         url = urlunsplit(('s3', PUBLISH_BUCKET, key, '', ''))
         s3_urls.append(url)

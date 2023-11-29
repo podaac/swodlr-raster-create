@@ -3,6 +3,7 @@ Lambda which retrieves the job statuses from the SDS and updates the waiting
 flag
 '''
 from podaac.swodlr_common.decorators import bulk_job_handler
+from podaac.swodlr_common.logging import JobMetadataInjector
 from podaac.swodlr_common import sds_statuses
 from .utilities import utils
 
@@ -21,17 +22,17 @@ def handle_jobs(jobs):
     waiting = False
 
     for job in jobs:
+        job_logger = JobMetadataInjector(logger, job)
+
         if job['job_status'] not in sds_statuses.WAITING:
-            logger.debug(
-                'Skipping %s; status: %s', job['product_id'], job['job_status']
-            )
+            job_logger.debug('Skipping job; status: %s', job['job_status'])
             continue
 
         job_id = job['job_id']
         try:
             job_info = utils.mozart_client.get_job_by_id(job_id).get_info()
         except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception('Failed to get job info: %s', job_id)
+            job_logger.exception('Failed to get job info')
             waiting = True
             continue
 
@@ -48,7 +49,7 @@ def handle_jobs(jobs):
             )
 
         if job_status in sds_statuses.WAITING:
-            logger.info('Waiting on %s', job['job_id'])
+            job_logger.info('Waiting product')
             waiting = True
 
     output = {'jobs': jobs}
