@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string"
+    },
+    "cycle": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pass": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scene": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "output_granule_extent_flag": {
+      "type": "boolean"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "output_sampling_grid_type": {
+          "type": "string",
+          "const": "UTM"
+        },
+        "raster_resolution": {
+          "type": "integer",
+          "enum": [
+            90,
+            100,
+            120,
+            125,
+            200,
+            250,
+            500,
+            1000,
+            2500,
+            5000,
+            10000
+          ]
+        },
+        "utm_zone_adjust": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "mgrs_band_adjust": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        }
+      },
+      "required": [
+        "utm_zone_adjust",
+        "mgrs_band_adjust"
+      ]
+    },
+    {
+      "properties": {
+        "output_sampling_grid_type": {
+          "type": "string",
+          "const": "GEO"
+        },
+        "raster_resolution": {
+          "type": "integer",
+          "enum": [
+            3,
+            4,
+            5,
+            6,
+            8,
+            15,
+            30,
+            60,
+            180,
+            300
+          ]
+        }
+      }
+    }
+  ],
+  "required": [
+    "product_id",
+    "cycle",
+    "pass",
+    "scene",
+    "output_granule_extent_flag",
+    "output_sampling_grid_type",
+    "raster_resolution"
+  ]
+}
