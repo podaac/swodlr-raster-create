@@ -63,6 +63,7 @@ def handle_jobs(jobs):
     output = validate_jobset(output)
     return output
 
+
 def _extract_metrics(job):
     metric_keys = ('time_queued', 'time_start', 'time_end')
     metrics = {key: job['job']['job_info'][key] for key in metric_keys}
