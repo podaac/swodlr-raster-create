@@ -40,10 +40,11 @@ def handle_jobs(jobs):
         job_status = job_info['status']
         if job_status == 'job-offline' and 'timedout' in job_info['tags']:
             job_status = 'job-timedout'  # Custom Swodlr status
-        elif job_status in sds_statuses.WAITING:
-            job_logger.info('Waiting product')
+        
+        if job_status in sds_statuses.WAITING:
+            job_logger.info('Waiting for job')
             waiting = True
-        elif job_status in sds_statuses.SUCCESS:
+        else:
             job_logger.debug('Pulling metrics out')
             metrics = _extract_metrics(job)
             job_logger.info('SDS metrics: %s', json.dumps(metrics))
@@ -66,5 +67,5 @@ def handle_jobs(jobs):
 
 def _extract_metrics(job):
     metric_keys = ('time_queued', 'time_start', 'time_end')
-    metrics = {key: job['job']['job_info'][key] for key in metric_keys}
+    metrics = {key: job['job']['job_info'].get(key) for key in metric_keys}
     return metrics
