@@ -40,7 +40,7 @@ def handle_jobs(jobs):
         job_status = job_info['status']
         if job_status == 'job-offline' and 'timedout' in job_info['tags']:
             job_status = 'job-timedout'  # Custom Swodlr status
-        
+
         if job_status in sds_statuses.WAITING:
             job_logger.info('Waiting for job')
             waiting = True
