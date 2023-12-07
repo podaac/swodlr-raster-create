@@ -46,7 +46,7 @@ def handle_jobs(jobs):
             waiting = True
         else:
             job_logger.debug('Pulling metrics out')
-            metrics = _extract_metrics(job)
+            metrics = _extract_metrics(job_info)
             job_logger.info('SDS metrics: %s', json.dumps(metrics))
 
         job['job_status'] = job_status  # Update job in JobSet
