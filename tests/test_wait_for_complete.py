@@ -59,7 +59,7 @@ class TestWaitForComplete(TestCase):
             mock().get_info.return_value = {
                 'status': test_status,
                 'traceback': test_traceback,
-                'job': { 'job_info': {} }
+                'job': {'job_info': {}}
             }
             result = wait_for_complete.lambda_handler(
                 deepcopy(self.waiting_jobset), None
