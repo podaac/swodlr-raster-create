@@ -2,6 +2,7 @@
 Lambda which retrieves the job statuses from the SDS and updates the waiting
 flag
 '''
+import json
 from podaac.swodlr_common.decorators import bulk_job_handler
 from podaac.swodlr_common.logging import JobMetadataInjector
 from podaac.swodlr_common import sds_statuses
@@ -40,6 +41,14 @@ def handle_jobs(jobs):
         if job_status == 'job-offline' and 'timedout' in job_info['tags']:
             job_status = 'job-timedout'  # Custom Swodlr status
 
+        if job_status in sds_statuses.WAITING:
+            job_logger.info('Waiting for job')
+            waiting = True
+        else:
+            job_logger.debug('Pulling metrics out')
+            metrics = _extract_metrics(job_info)
+            job_logger.info('SDS metrics: %s', json.dumps(metrics))
+
         job['job_status'] = job_status  # Update job in JobSet
 
         if 'traceback' in job_info:
@@ -48,13 +57,15 @@ def handle_jobs(jobs):
                 errors=['SDS threw an error']
             )
 
-        if job_status in sds_statuses.WAITING:
-            job_logger.info('Waiting product')
-            waiting = True
-
     output = {'jobs': jobs}
     if waiting:
         output.update(waiting=waiting)
 
     output = validate_jobset(output)
     return output
+
+
+def _extract_metrics(job):
+    metric_keys = ('time_queued', 'time_start', 'time_end')
+    metrics = {key: job['job']['job_info'].get(key) for key in metric_keys}
+    return metrics
