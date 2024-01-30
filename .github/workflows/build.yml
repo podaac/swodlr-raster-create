@@ -129,6 +129,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository: ${{ github.repository }}
+          ref: ${{ needs.build.outputs.github_sha }}
       - name: Show github SHA
         run: git rev-parse HEAD
       - uses: hashicorp/setup-terraform@v2
