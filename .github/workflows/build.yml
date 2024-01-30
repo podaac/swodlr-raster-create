@@ -60,6 +60,7 @@ jobs:
       #   -- Version Bumping --
       - name: Display current github SHA
         run: echo "${{ github.sha }}"
+        run: echo "${{ github.ref }}"
       - name: Manual execution means no version bump
         # If triggered by workflow dispatch, no version bump
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -88,6 +89,7 @@ jobs:
         run: bumpver --tag final
       - name: Display current github SHA
         run: echo "${{ github.sha }}"
+        run: echo "${{ github.ref }}"
 
       #   -- Build --
       - name: Build lambda package
