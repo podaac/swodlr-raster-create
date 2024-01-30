@@ -142,10 +142,6 @@ jobs:
         id: terraform-deploy
         working-directory: terraform/
         env:
-          AWS_ACCESS_KEY_ID:       ${{ secrets.AWS_ACCESS_KEY_ID_SERVICES_SIT }}
-          AWS_SECRET_ACCESS_KEY:   ${{ secrets.AWS_SECRET_ACCESS_KEY_SERVICES_SIT }}
-          AWS_DEFAULT_REGION:      us-west-2
-
           TF_VAR_sds_ca_cert_path: ${{ runner.temp }}/JPLICA.pem
           TF_VAR_sds_host:         ${{ secrets.SDS_HOST }}
           TF_VAR_sds_username:     ${{ secrets.SDS_USERNAME }}
