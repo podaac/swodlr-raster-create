@@ -137,6 +137,10 @@ jobs:
         with:
           name: dist
           path: dist/
+      - name: Display current github SHA
+        run: |
+          echo "${{ github.sha }}"
+          echo "${{ github.ref }}"
       - name: Deploy to ${{ needs.build.outputs.deploy_env }}
         id: terraform-deploy
         working-directory: terraform/
