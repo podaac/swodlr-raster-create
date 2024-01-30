@@ -58,6 +58,8 @@ jobs:
         run: poetry run pytest
 
       #   -- Version Bumping --
+      - name: Display current github SHA
+        run: echo "${{ github.sha }}"
       - name: Manual execution means no version bump
         # If triggered by workflow dispatch, no version bump
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -84,6 +86,8 @@ jobs:
       - name: Release version
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
         run: bumpver --tag final
+      - name: Display current github SHA
+        run: echo "${{ github.sha }}"
 
       #   -- Build --
       - name: Build lambda package
