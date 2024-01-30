@@ -19,11 +19,12 @@ on:
         options:
           - SIT
           - UAT
-
 jobs:
   build:
     name: build, lint, and test raster-create
     runs-on: ubuntu-latest
+    outputs:
+      deploy_env: ${{ steps.package-build.outputs.deploy_env }}
     steps:
       #   -- Setup --
       - uses: getsentry/action-github-app-token@v1
@@ -57,8 +58,15 @@ jobs:
         run: poetry run pytest
 
       #   -- Version Bumping --
+      - name: Manual execution means no version bump
+        # If triggered by workflow dispatch, no version bump
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo "TARGET_ENV=${{ github.event.inputs.venue }}" >> $GITHUB_ENV
+
+          TARGET_ENV=${{ github.event.inputs.venue }}
       - name: Bump alpha version
-        if: github.ref == 'refs/heads/develop'
+        if: github.ref == 'refs/heads/develop' && github.event_name != 'workflow_dispatch'
         run: |
           TAG=$(bumpver show -e | awk -F= '$1 == "TAG" {print $2};')
           if [ $TAG == 'final' ]; then
@@ -67,25 +75,63 @@ jobs:
           else
             bumpver update --tag alpha --tag-num
           fi
+          echo "TARGET_ENV=SIT" >> $GITHUB_ENV
       - name: Bump rc version
-        if: startsWith(github.ref, 'refs/heads/release/')
-        run: bumpver --tag rc --tag-num
+        if: startsWith(github.ref, 'refs/heads/release/') && github.event_name != 'workflow_dispatch'
+        run: |
+          bumpver --tag rc --tag-num
+          echo "TARGET_ENV=UAT" >> $GITHUB_ENV
       - name: Release version
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
         run: bumpver --tag final
 
       #   -- Build --
       - name: Build lambda package
-        run: ./build.sh
+        id: package-build
+        run: |
+          ./build.sh
+          echo "deploy_env=${{ env.TARGET_ENV }}" >> $GITHUB_OUTPUT
       - name: Upload packaged zip
         uses: actions/upload-artifact@v3.1.0
         with:
           name: dist
           path: dist/*.zip
 
-      #   -- Terraform Deployment --
-      - name: Deploy to SIT
-        if: github.ref == 'refs/heads/develop'
+  deploy:
+    name: Deploy
+    needs: build
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ needs.build.outputs.deploy_env }}
+    if: |
+      github.ref == 'refs/heads/develop' ||
+      github.ref == 'refs/heads/main'    ||
+      startsWith(github.ref, 'refs/heads/release') ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-west-2
+          role-session-name: GitHubActions
+          aws-access-key-id: ${{ secrets[vars.AWS_ACCESS_KEY_ID_SECRET_NAME] }}
+          aws-secret-access-key: ${{ secrets[vars.AWS_SECRET_ACCESS_KEY_SECRET_NAME] }}
+          mask-aws-account-id: true
+      - uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - name: Retrieve artifact from build step
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+      - name: Deploy to ${{ needs.build.outputs.deploy_env }}
+        id: terraform-deploy
         working-directory: terraform/
         env:
           AWS_ACCESS_KEY_ID:       ${{ secrets.AWS_ACCESS_KEY_ID_SERVICES_SIT }}
@@ -101,6 +147,6 @@ jobs:
           TF_VAR_publish_bucket:   ${{ vars.PUBLISH_BUCKET }}
         run: |
           echo "${{ secrets.JPLICA_CERT }}" >> ${{ runner.temp }}/JPLICA.pem
- 
-          source bin/config.sh sit
+          VENUE=$(echo "${{ vars.TF_VENUE }}" | tr '[:upper:]' '[:lower:]')
+          source bin/config.sh $VENUE
           terraform apply -auto-approve
