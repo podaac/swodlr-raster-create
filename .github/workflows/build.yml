@@ -146,6 +146,9 @@ jobs:
 
           TF_VAR_publish_bucket:   ${{ vars.PUBLISH_BUCKET }}
         run: |
+          pwd
+          ls -al
+          ls -al ../
           echo "${{ secrets.JPLICA_CERT }}" >> ${{ runner.temp }}/JPLICA.pem
           source bin/config.sh ${{ vars.TF_VENUE }}
           terraform apply -auto-approve
