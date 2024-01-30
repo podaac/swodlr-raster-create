@@ -97,28 +97,6 @@ jobs:
           name: dist
           path: dist/*.zip
 
-      # #   -- Terraform Deployment --
-      # - name: Deploy to SIT
-      #   if: github.ref == 'refs/heads/develop'
-      #   working-directory: terraform/
-      #   env:
-      #     AWS_ACCESS_KEY_ID:       ${{ secrets.AWS_ACCESS_KEY_ID_SERVICES_SIT }}
-      #     AWS_SECRET_ACCESS_KEY:   ${{ secrets.AWS_SECRET_ACCESS_KEY_SERVICES_SIT }}
-      #     AWS_DEFAULT_REGION:      us-west-2
-
-      #     TF_VAR_sds_ca_cert_path: ${{ runner.temp }}/JPLICA.pem
-      #     TF_VAR_sds_host:         ${{ secrets.SDS_HOST }}
-      #     TF_VAR_sds_username:     ${{ secrets.SDS_USERNAME }}
-      #     TF_VAR_sds_password:     ${{ secrets.SDS_PASSWORD }}
-      #     TF_VAR_sds_rs_bucket:    ${{ vars.SDS_RS_BUCKET }}
-
-      #     TF_VAR_publish_bucket:   ${{ vars.PUBLISH_BUCKET }}
-      #   run: |
-      #     echo "${{ secrets.JPLICA_CERT }}" >> ${{ runner.temp }}/JPLICA.pem
- 
-      #     source bin/config.sh sit
-      #     terraform apply -auto-approve
-
   deploy:
     name: Deploy
     needs: build
@@ -169,6 +147,6 @@ jobs:
           TF_VAR_publish_bucket:   ${{ vars.PUBLISH_BUCKET }}
         run: |
           echo "${{ secrets.JPLICA_CERT }}" >> ${{ runner.temp }}/JPLICA.pem
-
-          source bin/config.sh ${{ vars.TF_VENUE }}
+          VENUE=$(echo "${{ vars.TF_VENUE }}" | tr '[:upper:]' '[:lower:]')
+          source bin/config.sh $VENUE
           terraform apply -auto-approve
