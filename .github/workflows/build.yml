@@ -58,10 +58,6 @@ jobs:
         run: poetry run pytest
 
       #   -- Version Bumping --
-      - name: Display current github SHA
-        run: |
-          echo "${{ github.sha }}"
-          echo "${{ github.ref }}"
       - name: Manual execution means no version bump
         # If triggered by workflow dispatch, no version bump
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -89,6 +85,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
         run: bumpver --tag final
       #   -- Build --
+      - name: Show bumpver contents
+        run: cat bumpver.toml
       - name: Build lambda package
         id: package-build
         run: |
@@ -99,10 +97,6 @@ jobs:
         with:
           name: dist
           path: dist/*.zip
-      - name: Display current github SHA
-        run: |
-          echo "${{ github.sha }}"
-          echo "${{ github.ref }}"
   
   deploy:
     name: Deploy
@@ -137,10 +131,6 @@ jobs:
         with:
           name: dist
           path: dist/
-      - name: Display current github SHA
-        run: |
-          echo "${{ github.sha }}"
-          echo "${{ github.ref }}"
       - name: Deploy to ${{ needs.build.outputs.deploy_env }}
         id: terraform-deploy
         working-directory: terraform/
@@ -160,6 +150,7 @@ jobs:
           pwd
           ls -al
           ls -al ../
+          cat ../bumpver.toml
           ls -all ../dist/
           echo "${{ secrets.JPLICA_CERT }}" >> ${{ runner.temp }}/JPLICA.pem
           source bin/config.sh ${{ vars.TF_VENUE }}
