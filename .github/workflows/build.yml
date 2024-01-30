@@ -88,11 +88,6 @@ jobs:
       - name: Release version
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
         run: bumpver --tag final
-      - name: Display current github SHA
-        run: |
-          echo "${{ github.sha }}"
-          echo "${{ github.ref }}"
-
       #   -- Build --
       - name: Build lambda package
         id: package-build
@@ -104,7 +99,11 @@ jobs:
         with:
           name: dist
           path: dist/*.zip
-
+      - name: Display current github SHA
+        run: |
+          echo "${{ github.sha }}"
+          echo "${{ github.ref }}"
+  
   deploy:
     name: Deploy
     needs: build
