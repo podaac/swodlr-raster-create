@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       deploy_env: ${{ steps.package-build.outputs.deploy_env }}
+      github_sha: ${{ steps.update-sha.outputs.github_sha }}
     steps:
       #   -- Setup --
       - uses: getsentry/action-github-app-token@v1
@@ -98,7 +99,11 @@ jobs:
           name: dist
           path: dist/*.zip
       - name: Show github SHA
-        run: git rev-parse HEAD
+        id: update-sha
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "Github Sha: ${SHA}"
+          echo "github_sha=${SHA}" >> $GITHUB_OUTPUT
 
   deploy:
     name: Deploy
