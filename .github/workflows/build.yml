@@ -168,7 +168,7 @@ jobs:
       - name: Send notifications to slack
         uses: slackapi/slack-github-action@v1.25.0
         env:
-          SLACK_WEBHOOK_URL: https://hooks.slack.com/triggers/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
+          SLACK_WEBHOOK_URL: ${{ secrets.NOTIFICATION_WEBHOOK_SWODLR }}
         with:
           payload: |
             {
