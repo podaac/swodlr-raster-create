@@ -174,4 +174,13 @@ jobs:
             {
               "message": "${{ github.repository }} [version ${{ env.SUBMODULE_VERSION }}] has been deployed to the ${{ needs.build.outputs.deploy_env }} environment"
             }
-  
+      - name: Send failure notifications to slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.NOTIFICATION_WEBHOOK_SWODLR }}
+        with:
+          payload: |
+            {
+              "message": "ERROR: ${{ github.repository }} [version ${{ env.SUBMODULE_VERSION }}] has encountered an error while trying to deploy to the ${{ needs.build.outputs.deploy_env }} environment"
+            }
