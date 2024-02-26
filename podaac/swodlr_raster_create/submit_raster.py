@@ -24,7 +24,7 @@ raster_job_type.initialize()
 
 
 @job_handler
-def handle_job(eval_job, job_logger):
+def handle_job(eval_job, job_logger, input_params):
     '''
     Handler which retrieves the configuration for the evaluate job,
     submits the raster job, and outputs a new raster job object
@@ -37,13 +37,13 @@ def handle_job(eval_job, job_logger):
 
     raster_job = {
         'stage': STAGE,
-        'product_id': eval_job['product_id'],
-        'metadata': eval_job['metadata']
+        'product_id': eval_job['product_id']
     }
 
-    cycle = str(raster_job['metadata']['cycle']).rjust(3, '0')
-    passe = str(raster_job['metadata']['pass']).rjust(3, '0')
-    scene = str(raster_job['metadata']['scene']).rjust(3, '0')
+    print('testtesttest', eval_job, job_logger, input_params)
+    cycle = str(input_params['cycle']).rjust(3, '0')
+    passe = str(input_params['pass']).rjust(3, '0')
+    scene = str(input_params['scene']).rjust(3, '0')
     state_config_id = f'L2_HR_Raster_{cycle}_{passe}_{scene}-state-config'
 
     try:
@@ -69,8 +69,8 @@ def handle_job(eval_job, job_logger):
         'output_granule_extent_flag', 'utm_zone_adjust', 'mgrs_band_adjust'
     ]
     input_params = {
-        param: eval_job['metadata'][param]
-        for param in passthru_params if eval_job['metadata'][param] is not None
+        param: input_params[param]
+        for param in passthru_params if input_params[param] is not None
     }
 
     # Input param conversions

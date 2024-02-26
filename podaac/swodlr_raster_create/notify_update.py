@@ -14,13 +14,13 @@ sns: SNSClient = boto3.client('sns')
 
 
 @bulk_job_handler
-def handle_jobs(jobs):
+def handle_jobs(jobset):
     '''
     Handler which sends each job in a JobSet as a message to a SNS topic
     '''
     msg_queue = {}
 
-    for job in jobs:
+    for job in jobset['jobs']:
         message = {
             'Id': job['product_id'],
             'Message': json.dumps(job, separators=(',', ':'))
@@ -57,4 +57,4 @@ def handle_jobs(jobs):
     if len(msg_queue) > 0:
         raise RuntimeError(f'Failed to send {len(msg_queue)} update messages')
 
-    return jobs
+    return jobset

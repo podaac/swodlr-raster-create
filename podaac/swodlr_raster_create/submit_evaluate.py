@@ -2,9 +2,10 @@
 Lambda which processes the SQS message for inputs, submits the job(s) to the
 SDS, and returns a jobset
 '''
-import json
+from copy import deepcopy
 from time import sleep
 
+from podaac.swodlr_common.decorators import bulk_job_handler
 from requests import RequestException
 
 from .utilities import utils
@@ -16,40 +17,39 @@ MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
 TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
 logger = utils.get_logger(__name__)
-
-validate_input = utils.load_json_schema('input')
 validate_jobset = utils.load_json_schema('jobset')
 
 raster_eval_job_type = utils.mozart_client.get_job_type(
-    f'job-SUBMIT_L2_HR_Raster:{PCM_RELEASE_TAG}'
+    utils.get_latest_job_version('job-SUBMIT_L2_HR_Raster')
 )
 raster_eval_job_type.initialize()
 
 
-def lambda_handler(event, _context):
+@bulk_job_handler(returns_jobset=True)
+def bulk_job_handler(jobset):
     '''
     Lambda handler which accepts an SQS message, parses records as inputs,
     submits jobs to the SDS, and returns a jobset
     '''
-    logger.debug('Records received: %d', len(event['Records']))
+    inputs = deepcopy(jobset['inputs'])
+    jobs = [_process_input(input_) for input_ in jobset['inputs'].values()]
 
-    jobs = [_process_record(record) for record in event['Records']]
-
-    job_set = {'jobs': jobs}
-    job_set = validate_jobset(job_set)
+    job_set = validate_jobset({
+        'jobs': jobs,
+        'inputs': inputs
+    })
     return job_set
 
 
-def _process_record(record):
-    body = validate_input(json.loads(record['body']))
+def _process_input(input_):
     output = {
         'stage': STAGE,
-        'product_id': body['product_id']
+        'product_id': input_['product_id']
     }
 
-    cycle = str(body['cycle']).rjust(3, '0')
-    passe = str(body['pass']).rjust(3, '0')
-    tile = _scene_to_tile(body['scene'])  # Josh: 3:<
+    cycle = str(input_['cycle']).rjust(3, '0')
+    passe = str(input_['pass']).rjust(3, '0')
+    tile = _scene_to_tile(input_['scene'])  # Josh: 3:<
 
     pixcvec_granule_name = f'{DATASET_NAME}_{cycle}_{passe}_{tile}_*'
 
@@ -84,19 +84,7 @@ def _process_record(record):
 
             output.update(
                 job_id=job.job_id,
-                job_status='job-queued',
-                metadata={
-                    'cycle': body['cycle'],
-                    'pass': body['pass'],
-                    'scene': body['scene'],
-                    'output_granule_extent_flag':
-                        body['output_granule_extent_flag'],
-                    'output_sampling_grid_type':
-                        body['output_sampling_grid_type'],
-                    'raster_resolution': body['raster_resolution'],
-                    'utm_zone_adjust': body.get('utm_zone_adjust'),
-                    'mgrs_band_adjust': body.get('mgrs_band_adjust')
-                }
+                job_status='job-queued'
             )
             return output
         # pylint: disable=duplicate-code
