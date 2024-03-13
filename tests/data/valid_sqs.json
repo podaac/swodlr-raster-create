@@ -1,0 +1,37 @@
+{
+  "Records": [
+    {
+      "messageId": "MessageID_1",
+      "receiptHandle": "ReceiptHandle_1",
+      "body": "{\"product_id\":\"bd18530a-0383-44ec-8cec-4019892afc2e\",\"cycle\":1,\"pass\":2,\"scene\":3,\"output_granule_extent_flag\":true,\"output_sampling_grid_type\":\"UTM\",\"raster_resolution\":100,\"utm_zone_adjust\":0,\"mgrs_band_adjust\":0}",
+      "attributes": {},
+      "messageAttributes": {},
+      "md5OfBody": "",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:queue",
+      "awsRegion": "us-west-2"
+    },
+    {
+      "messageId": "MessageID_2",
+      "receiptHandle": "ReceiptHandle_2",
+      "body": "{\"product_id\":\"d8fa2f55-2290-42fb-9086-36fbcc5c00d0\",\"cycle\":4,\"pass\":5,\"scene\":6,\"output_granule_extent_flag\":false,\"output_sampling_grid_type\":\"UTM\",\"raster_resolution\":10000,\"utm_zone_adjust\":1,\"mgrs_band_adjust\":-1}",
+      "attributes": {},
+      "messageAttributes": {},
+      "md5OfBody": "",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:queue",
+      "awsRegion": "us-east-2"
+    },
+    {
+      "messageId": "MessageID_3",
+      "receiptHandle": "ReceiptHandle_3",
+      "body": "{\"product_id\":\"ff5c0b58-d23e-47f1-9faf-46cc635c5c40\",\"cycle\":7,\"pass\":8,\"scene\":9,\"output_granule_extent_flag\":true,\"output_sampling_grid_type\":\"GEO\",\"raster_resolution\":3}",
+      "attributes": {},
+      "messageAttributes": {},
+      "md5OfBody": "",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-2:123456789012:queue",
+      "awsRegion": "us-east-2"
+    }
+  ]
+}

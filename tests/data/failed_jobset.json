@@ -1,0 +1,10 @@
+{
+  "jobs": [
+    {
+      "product_id": "d8bed2aa-1e0f-4944-9a25-54b9983e1349",
+      "job_status": "job-failed",
+      "job_id": "75789fd5-dcea-45be-bc0b-17331566ab37",
+      "stage": "testing"
+    }
+  ]
+}

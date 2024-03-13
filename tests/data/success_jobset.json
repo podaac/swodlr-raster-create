@@ -1,0 +1,21 @@
+{
+  "jobs": [
+    {
+      "product_id": "24168643-1002-45f5-a059-0b5266bc28f3",
+      "job_status": "job-completed",
+      "job_id": "75b10552-3d5a-495d-95f7-a8db03c18f04",
+      "stage": "testing",
+      "granules": ["s3://testing/test.nc"],
+      "metadata": {
+        "cycle": 1,
+        "pass": 2,
+        "scene": 3,
+        "raster_resolution": 100,
+        "output_sampling_grid_type": "UTM",
+        "output_granule_extent_flag": true,
+        "utm_zone_adjust": 0,
+        "mgrs_band_adjust": 0
+      }
+    }
+  ]
+}
