@@ -5,9 +5,9 @@ SDS, and returns a jobset
 from copy import deepcopy
 from time import sleep
 
-from podaac.swodlr_common.decorators import bulk_job_handler
 from requests import RequestException
 
+from podaac.swodlr_common.decorators import bulk_job_handler
 from .utilities import utils
 
 STAGE = __name__.rsplit('.', 1)[1]
@@ -26,7 +26,7 @@ raster_eval_job_type.initialize()
 
 
 @bulk_job_handler(returns_jobset=True)
-def bulk_job_handler(jobset):
+def handle_bulk_job(jobset):
     '''
     Lambda handler which accepts an SQS message, parses records as inputs,
     submits jobs to the SDS, and returns a jobset

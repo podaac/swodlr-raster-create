@@ -1,3 +1,4 @@
+'''Performs input granule checks prior to raster product generation'''
 from collections import namedtuple
 import json
 from urllib.parse import urlparse
@@ -28,10 +29,19 @@ Granule = namedtuple('Granule', ('name', 'url'))
 
 
 def lambda_handler(event, _context):
+    '''
+    Lambda handler which accepts a SQS message which follows the `input` json
+    schema and performs preflight-checks on the requested product. These
+    preflight checks ensure that granules required for granule generation
+    are ingested into the SDS. This is done by searching against CMR for
+    the required granules. Any granules that are in CMR that aren't in GRQ will
+    be ingested and any granules that are in GRQ that aren't in CMR will be
+    removed to maintain consistency across both systems
+    '''
     logger.debug('Records received: %d', len(event['Records']))
 
-    inputs = dict()
-    jobs = list()
+    inputs = {}
+    jobs = []
 
     for record in event['Records']:
         body = validate_input(json.loads(record['body']))
@@ -64,6 +74,7 @@ def lambda_handler(event, _context):
 
     return jobset
 
+
 def _find_cmr_granules(cycle, passe, scene):
     query = '''
     query($tileParams: GranulesInput, $orbitParams: GranulesInput) {
@@ -83,7 +94,9 @@ def _find_cmr_granules(cycle, passe, scene):
     }
     '''
 
-    tile_ids = ''.join([f'{i:03}L,{i:03}R,' for i in range(scene - 1, scene + 3)])
+    tile_ids = ''.join([
+        f'{i:03}L,{i:03}R,' for i in range(scene - 1, scene + 3)
+    ])
     variables = {
         'tileParams': {
             'collectionConceptIds': [PIXC_CONCEPT_ID, PIXCVEC_CONCEPT_ID],
@@ -106,6 +119,7 @@ def _find_cmr_granules(cycle, passe, scene):
     response = requests.post(
         GRAPHQL_ENDPOINT,
         headers={'Authorization': f'Bearer {EDL_TOKEN}'},
+        timeout=15,
         json={
             'query': query,
             'variables': variables
@@ -115,24 +129,29 @@ def _find_cmr_granules(cycle, passe, scene):
     if not response.ok:
         raise RuntimeError('Experienced network error attempting to reach CMR')
 
-    json = response.json()
-    tiles = json['data']['tiles']['items']
-    orbit = json['data']['orbit']['items']
+    body = response.json()
+    tiles = body['data']['tiles']['items']
+    orbit = body['data']['orbit']['items']
 
     granules = set()
     for granule in tiles + orbit:
         s3_link = _find_s3_link(granule['relatedUrls'])
         if s3_link is None:
-            logger.warn('No s3 link found: %s', granule['granuleUr'])
+            logger.warning('No s3 link found: %s', granule['granuleUr'])
             continue
 
-        granules.add(Granule(granule['granuleUr'], _find_s3_link(granule['relatedUrls'])))
+        granules.add(Granule(
+            granule['granuleUr'], _find_s3_link(granule['relatedUrls'])
+        ))
 
     return granules
 
+
 def _find_grq_granules(cycle, passe, scene):
-    collection_ids = [f'L2_HR_PIXC', 'L2_HR_PIXCVec']
-    tile_ids = [str(tile).rjust(3, '0') for tile in range(scene * 2 - 1, scene * 2 + 3)]
+    collection_ids = ['L2_HR_PIXC', 'L2_HR_PIXCVec']
+    tile_ids = [
+        str(tile).rjust(3, '0') for tile in range(scene * 2 - 1, scene * 2 + 3)
+    ]
 
     pixc_results = mozart_es_client.search(index='grq', query={
         'bool': {
@@ -165,15 +184,17 @@ def _find_grq_granules(cycle, passe, scene):
 
     return granules
 
-def _find_s3_link(relatedUrls):
-    for url in relatedUrls:
+
+def _find_s3_link(related_urls):
+    for url in related_urls:
         if not url['type'].startswith('GET DATA'):
             continue
 
         if urlparse(url['url']).scheme.lower() == 's3':
             return url['url']
-        
+
         return None
+
 
 def _ingest_cmr_granules(granules):
     jobs = []
@@ -192,13 +213,15 @@ def _ingest_cmr_granules(granules):
             'job_status': 'job-queued',
             'stage': STAGE
         })
-    
+
     return jobs
+
 
 def _delete_grq_granules(granules):
     mozart_es_client.delete_by_query(index='grq', query={
         "ids": {"values": [granule.name for granule in granules]}
     })
+
 
 def _gen_mozart_job_params(filename, url):
     params = {
