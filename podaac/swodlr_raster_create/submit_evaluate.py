@@ -34,10 +34,10 @@ def bulk_job_handler(jobset):
     inputs = deepcopy(jobset['inputs'])
     jobs = [_process_input(input_) for input_ in jobset['inputs'].values()]
 
-    job_set = validate_jobset({
+    job_set = {
         'jobs': jobs,
         'inputs': inputs
-    })
+    }
     return job_set
 
 
