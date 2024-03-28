@@ -28,7 +28,7 @@ with (
     patch('boto3.resource'),
     patch('otello.mozart.Mozart.get_job_type'),
     patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),  # pylint: disable-next=line-too-long # noqa: E501
-    patch('podaac.swodlr_raster_create.utilities.utils.get_mozart_es_client') as mock_es_client  # pylint: disable-next=line-too-long # noqa: E501
+    patch('podaac.swodlr_raster_create.utilities.utils.get_grq_es_client') as mock_es_client  # pylint: disable-next=line-too-long # noqa: E501
 ):
     from podaac.swodlr_raster_create import preflight
 
@@ -160,6 +160,7 @@ class TestPreflight(TestCase):
             self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))  # noqa: E501
             self.assertDictEqual(post_calls[0].kwargs, {
                 'headers': {'Authorization': 'Bearer edl-test-token'},
+                'timeout': 15,
                 'json': {
                     # pylint: disable-next=line-too-long
                     'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
@@ -320,6 +321,7 @@ class TestPreflight(TestCase):
             self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))  # noqa: E501
             self.assertDictEqual(post_calls[0].kwargs, {
                 'headers': {'Authorization': 'Bearer edl-test-token'},
+                'timeout': 15,
                 'json': {
                     # pylint: disable-next=line-too-long
                     'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
@@ -481,6 +483,7 @@ class TestPreflight(TestCase):
             self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))  # noqa: E501
             self.assertDictEqual(post_calls[0].kwargs, {
                 'headers': {'Authorization': 'Bearer edl-test-token'},
+                'timeout': 15,
                 'json': {
                     # pylint: disable-next=line-too-long # noqa: E501
                     'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
