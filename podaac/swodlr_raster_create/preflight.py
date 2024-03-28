@@ -6,6 +6,7 @@ import requests
 from .utilities import utils
 
 STAGE = __name__.rsplit('.', 1)[1]
+EDL_TOKEN = utils.get_param('edl_token')
 GRAPHQL_ENDPOINT = utils.get_param('cmr_graphql_endpoint')
 PIXC_CONCEPT_ID = utils.get_param('pixc_concept_id')
 PIXCVEC_CONCEPT_ID = utils.get_param('pixcvec_concept_id')
@@ -42,6 +43,9 @@ def lambda_handler(event, _context):
 
         cmr_granules = _find_cmr_granules(cycle, passe, scene)
         grq_granules = _find_grq_granules(cycle, passe, scene)
+
+        logger.debug('CMR results: %s', cmr_granules)
+        logger.debug('GRQ results: %s', grq_granules)
 
         cmr_only = cmr_granules - grq_granules
         grq_only = grq_granules - cmr_granules
@@ -99,10 +103,14 @@ def _find_cmr_granules(cycle, passe, scene):
         }
     }
 
-    response = requests.post(GRAPHQL_ENDPOINT, json={
-        'query': query,
-        'variables': variables
-    })
+    response = requests.post(
+        GRAPHQL_ENDPOINT,
+        headers={'Authorization': f'Bearer {EDL_TOKEN}'},
+        json={
+            'query': query,
+            'variables': variables
+        }
+    )
 
     if not response.ok:
         raise RuntimeError('Experienced network error attempting to reach CMR')
@@ -146,6 +154,9 @@ def _find_grq_granules(cycle, passe, scene):
             ]
         }
     }, sort={'metadata.FileCreationDateTime': {'order': 'desc'}}, size=1)
+
+    logger.debug('PIXC grq results: %s', pixc_results)
+    logger.debug('Orbit grq results: %s', orbit_results)
 
     granules = set()
     for result in pixc_results['hits']['hits'] + orbit_results['hits']['hits']:
