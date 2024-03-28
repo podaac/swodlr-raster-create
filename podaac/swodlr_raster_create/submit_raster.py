@@ -40,7 +40,6 @@ def handle_job(eval_job, job_logger, input_params):
         'product_id': eval_job['product_id']
     }
 
-    print('testtesttest', eval_job, job_logger, input_params)
     cycle = str(input_params['cycle']).rjust(3, '0')
     passe = str(input_params['pass']).rjust(3, '0')
     scene = str(input_params['scene']).rjust(3, '0')
