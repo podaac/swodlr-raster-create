@@ -153,7 +153,7 @@ def _find_grq_granules(cycle, passe, scene):
         str(tile).rjust(3, '0') for tile in range(scene * 2 - 1, scene * 2 + 3)
     ]
 
-    pixc_results = mozart_es_client.search(index='grq', query={
+    pixc_results = grq_es_client.search(index='grq', query={
         'bool': {
             'must': [
                 {'term': {'dataset_type.keyword': 'SDP'}},
@@ -165,7 +165,7 @@ def _find_grq_granules(cycle, passe, scene):
         }
     })
 
-    orbit_results = mozart_es_client.search(index='grq', query={
+    orbit_results = grq_es_client.search(index='grq', query={
         'bool': {
             'must': [
                 {'term': {'dataset_type.keyword': 'AUX'}},
@@ -218,7 +218,7 @@ def _ingest_cmr_granules(granules):
 
 
 def _delete_grq_granules(granules):
-    mozart_es_client.delete_by_query(index='grq', query={
+    grq_es_client.delete_by_query(index='grq', query={
         "ids": {"values": [granule.name for granule in granules]}
     })
 
