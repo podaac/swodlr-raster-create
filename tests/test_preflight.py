@@ -47,8 +47,6 @@ class TestPreflight(TestCase):
     invalid_sqs_path = data_path.joinpath('invalid_sqs.json')
     with valid_sqs_path.open('r', encoding='utf-8') as f:
         valid_sqs = json.load(f)
-    with invalid_sqs_path.open('r', encoding='utf-8') as f:
-        invalid_sqs = json.load(f)
 
     def test_no_action(self):
         with patch('requests.post') as mock_post:
