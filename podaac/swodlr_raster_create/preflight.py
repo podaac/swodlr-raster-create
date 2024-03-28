@@ -13,7 +13,7 @@ PIXC_CONCEPT_ID = utils.get_param('pixc_concept_id')
 PIXCVEC_CONCEPT_ID = utils.get_param('pixcvec_concept_id')
 XDF_ORBIT_CONCEPT_ID = utils.get_param('xdf_orbit_concept_id')
 
-mozart_es_client = utils.get_mozart_es_client()
+grq_es_client = utils.get_grq_es_client()
 
 logger = utils.get_logger(__name__)
 
