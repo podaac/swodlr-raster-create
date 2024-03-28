@@ -14,7 +14,7 @@ validate_jobset = utils.load_json_schema('jobset')
 
 
 @bulk_job_handler(returns_jobset=True)
-def handle_jobs(jobs):
+def handle_jobs(jobset):
     '''
     Lambda handler which accepts a jobset, updates the statuses from the SDS,
     appends a waiting flag if the jobset still has jobs that haven't completed,
@@ -22,7 +22,7 @@ def handle_jobs(jobs):
     '''
     waiting = False
 
-    for job in jobs:
+    for job in jobset['jobs']:
         job_logger = JobMetadataInjector(logger, job)
 
         if job['job_status'] not in sds_statuses.WAITING:
@@ -57,11 +57,10 @@ def handle_jobs(jobs):
                 errors=['SDS threw an error']
             )
 
-    output = {'jobs': jobs}
     if waiting:
-        output.update(waiting=waiting)
+        jobset.update(waiting=waiting)
 
-    output = validate_jobset(output)
+    output = validate_jobset(jobset)
     return output
 
 

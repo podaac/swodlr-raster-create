@@ -4,8 +4,44 @@ resource "aws_sfn_state_machine" "raster_create" {
   role_arn = aws_iam_role.sfn.arn
 
   definition = jsonencode({
-    StartAt = "SubmitEvaluate"
+    StartAt = "Preflight"
     States = {
+      Preflight = {
+        Type = "Task"
+        Resource = aws_lambda_function.preflight.arn,
+        Next = "WaitForPreflightComplete"
+      }
+
+      WaitForPreflightComplete = {
+        Type = "Task"
+        Resource = aws_lambda_function.wait_for_complete.arn
+        Next = "CheckPreflightJobs"
+      }
+
+      CheckPreflightJobs = {
+        Type = "Choice",
+        Choices = [{
+          And = [
+            {
+              Variable = "$.waiting"
+              IsPresent = true
+            },
+            {
+              Variable = "$.waiting"
+              BooleanEquals = true
+            }
+          ]
+          Next = "TimeoutPreflight"
+        }]
+        Default = "SubmitEvaluate"
+      }
+
+      TimeoutPreflight = {
+        Type = "Wait"
+        Seconds = 60
+        Next = "WaitForPreflightComplete"
+      }
+
       SubmitEvaluate = {
         Type = "Task"
         Resource = aws_lambda_function.submit_evaluate.arn

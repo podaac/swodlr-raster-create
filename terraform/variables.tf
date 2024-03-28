@@ -21,6 +21,26 @@ variable "region" {
     type = string
 }
 
+variable "cmr_graphql_endpoint" {
+    type = string
+}
+
+variable "edl_token" {
+    type = string
+}
+
+variable "pixc_concept_id" {
+    type = string
+}
+
+variable "pixcvec_concept_id" {
+    type = string
+}
+
+variable "xdf_orbit_concept_id" {
+    type = string
+}
+
 variable "sds_pcm_release_tag" {
     type = string
 }

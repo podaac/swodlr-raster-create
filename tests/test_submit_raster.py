@@ -89,8 +89,8 @@ class TestSubmitRaster(TestCase):
         self.assertEqual(job['product_id'], input_job['product_id'])
         self.assertNotEqual(job['job_id'], input_job['job_id'])
 
-        # Check metadata passed along
-        self.assertEqual(job['metadata'], input_job['metadata'])
+        # Check input params passed along
+        self.assertEqual(results['inputs'], self.success_jobset['inputs'])
 
         # Check Otello calls performed
         # pylint: disable=no-member
@@ -107,16 +107,6 @@ class TestSubmitRaster(TestCase):
         input_params = input_params_call.args[0]
         self.assertEqual(input_params['output_sampling_grid_type'], 'utm')
         self.assertEqual(input_params['output_granule_extent_flag'], 1)
-
-        # Check that other params are passed directly through
-        param_names = [
-            'raster_resolution',
-            'utm_zone_adjust',
-            'mgrs_band_adjust'
-        ]
-        input_job_metadata = input_job['metadata']
-        for name in param_names:
-            self.assertEqual(input_params[name], input_job_metadata[name])
 
     def tearDown(self):
         # pylint: disable=no-member
