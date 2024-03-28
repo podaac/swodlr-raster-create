@@ -107,7 +107,6 @@ class TestSubmitRaster(TestCase):
         input_params = input_params_call.args[0]
         self.assertEqual(input_params['output_sampling_grid_type'], 'utm')
         self.assertEqual(input_params['output_granule_extent_flag'], 1)
-        
 
     def tearDown(self):
         # pylint: disable=no-member

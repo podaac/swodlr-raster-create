@@ -3,10 +3,10 @@ from collections import namedtuple
 import json
 import os
 from pathlib import Path
-from requests import Response
 from unittest import TestCase
 from unittest.mock import Mock, patch
 from uuid import uuid4
+from requests import Response
 
 
 # pylint: disable=duplicate-code
@@ -27,8 +27,8 @@ with (
     patch('boto3.client'),
     patch('boto3.resource'),
     patch('otello.mozart.Mozart.get_job_type'),
-    patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),
-    patch('podaac.swodlr_raster_create.utilities.utils.get_mozart_es_client') as mock_es_client
+    patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),  # pylint: disable-next=line-too-long # noqa: E501
+    patch('podaac.swodlr_raster_create.utilities.utils.get_mozart_es_client') as mock_es_client  # pylint: disable-next=line-too-long # noqa: E501
 ):
     from podaac.swodlr_raster_create import preflight
 
@@ -49,6 +49,10 @@ class TestPreflight(TestCase):
         valid_sqs = json.load(f)
 
     def test_no_action(self):
+        '''
+        Test the situation where GRQ and CMR are at the same state; there
+        should be no action taken by preflight
+        '''
         with patch('requests.post') as mock_post:
             # -- CMR Mock --
             mock_cmr_response = Mock(spec=Response)
@@ -94,9 +98,9 @@ class TestPreflight(TestCase):
                     }
                 }
             }
-            
+
             mock_post.return_value = mock_cmr_response
-            
+
             # -- GRQ Mock --
             mock_grq_tile_response = {
                 'hits': {
@@ -131,7 +135,7 @@ class TestPreflight(TestCase):
                     }]
                 }
             }
-            
+
             mock_grq_orbit_response = {
                 'hits': {
                     'hits': [{
@@ -144,8 +148,8 @@ class TestPreflight(TestCase):
                     }]
                 }
             }
-            
-            mock_es_client().search.side_effect = (mock_grq_tile_response, mock_grq_orbit_response)
+
+            mock_es_client().search.side_effect = (mock_grq_tile_response, mock_grq_orbit_response)  # pylint: disable=line-too-long # noqa: E501
 
             # Lambda handler call
             results = preflight.lambda_handler(self.valid_sqs, None)
@@ -153,18 +157,22 @@ class TestPreflight(TestCase):
             # Assertion checks
             post_calls = mock_post.call_args_list
             self.assertEqual(len(post_calls), 1)
-            self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))
+            self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))  # noqa: E501
             self.assertDictEqual(post_calls[0].kwargs, {
                 'headers': {'Authorization': 'Bearer edl-test-token'},
                 'json': {
-                    'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',
+                    # pylint: disable-next=line-too-long
+                    'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
                     'variables': {
                         'tileParams': {
-                            'collectionConceptIds': ['test-pixc-concept-id', 'test-pixcvec-concept-id'],
+                            'collectionConceptIds': [
+                                'test-pixc-concept-id',
+                                'test-pixcvec-concept-id'
+                            ],
                             'cycle': '001', 'passes': {
                                 '0': {
                                     'pass': '002',
-                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'
+                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'  # noqa: E501
                                 }
                             }
                         },
@@ -185,10 +193,10 @@ class TestPreflight(TestCase):
                     'bool': {
                         'must': [
                             {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},
+                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},  # pylint: disable=line-too-long # noqa: E501
                             {'term': {'metadata.CycleID': '001'}},
                             {'term': {'metadata.PassID': '002'}},
-                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}
+                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
                         ]
                     }
                 }
@@ -208,7 +216,7 @@ class TestPreflight(TestCase):
                 },
                 'size': 1}
             )
-            
+
             # Results check
             self.assertDictEqual(results, {
                 'jobs': [],
@@ -226,8 +234,14 @@ class TestPreflight(TestCase):
                     }
                 }
             })
- 
+
     def test_clear_sds(self):
+        '''
+        Test the situation where GRQ is showing granules which are not found
+        on a CMR search; preflight should reconcile the difference by deleting
+        the entries on GRQ to ensure consistency
+        '''
+
         with patch('requests.post') as mock_post:
             # -- CMR Mock --
             mock_cmr_response = Mock(spec=Response)
@@ -242,9 +256,9 @@ class TestPreflight(TestCase):
                     }
                 }
             }
-            
+
             mock_post.return_value = mock_cmr_response
-            
+
             # -- GRQ Mock --
             mock_grq_tile_response = {
                 'hits': {
@@ -279,7 +293,7 @@ class TestPreflight(TestCase):
                     }]
                 }
             }
-            
+
             mock_grq_orbit_response = {
                 'hits': {
                     'hits': [{
@@ -292,8 +306,10 @@ class TestPreflight(TestCase):
                     }]
                 }
             }
-            
-            mock_es_client().search.side_effect = [mock_grq_tile_response, mock_grq_orbit_response]
+
+            mock_es_client().search.side_effect = [
+                mock_grq_tile_response, mock_grq_orbit_response
+            ]
 
             # Lambda handler call
             results = preflight.lambda_handler(self.valid_sqs, None)
@@ -301,18 +317,22 @@ class TestPreflight(TestCase):
             # Assertion checks
             post_calls = mock_post.call_args_list
             self.assertEqual(len(post_calls), 1)
-            self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))
+            self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))  # noqa: E501
             self.assertDictEqual(post_calls[0].kwargs, {
                 'headers': {'Authorization': 'Bearer edl-test-token'},
                 'json': {
-                    'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',
+                    # pylint: disable-next=line-too-long
+                    'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
                     'variables': {
                         'tileParams': {
-                            'collectionConceptIds': ['test-pixc-concept-id', 'test-pixcvec-concept-id'],
+                            'collectionConceptIds': [
+                                'test-pixc-concept-id',
+                                'test-pixcvec-concept-id'
+                            ],
                             'cycle': '001', 'passes': {
                                 '0': {
                                     'pass': '002',
-                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'
+                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'  # noqa: E501
                                 }
                             }
                         },
@@ -333,10 +353,10 @@ class TestPreflight(TestCase):
                     'bool': {
                         'must': [
                             {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},
+                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},  # pylint: disable=line-too-long # noqa: E501
                             {'term': {'metadata.CycleID': '001'}},
                             {'term': {'metadata.PassID': '002'}},
-                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}
+                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
                         ]
                     }
                 }
@@ -360,14 +380,17 @@ class TestPreflight(TestCase):
             delete_calls = mock_es_client().delete_by_query.call_args_list
             self.assertEqual(len(delete_calls), 1)
             self.assertEqual(delete_calls[0].kwargs['index'], 'grq')
-            self.assertCountEqual(delete_calls[0].kwargs['query']['ids']['values'], [
-                'SWODLR_TEST_GRANULE_1',
-                'SWODLR_TEST_GRANULE_2',
-                'SWODLR_TEST_GRANULE_3',
-                'SWODLR_TEST_GRANULE_4',
-                'SWODLR_TEST_GRANULE_5',
-            ])
-            
+            self.assertCountEqual(
+                delete_calls[0].kwargs['query']['ids']['values'],
+                [
+                    'SWODLR_TEST_GRANULE_1',
+                    'SWODLR_TEST_GRANULE_2',
+                    'SWODLR_TEST_GRANULE_3',
+                    'SWODLR_TEST_GRANULE_4',
+                    'SWODLR_TEST_GRANULE_5',
+                ]
+            )
+
             # Results check
             self.assertDictEqual(results, {
                 'jobs': [],
@@ -385,8 +408,14 @@ class TestPreflight(TestCase):
                     }
                 }
             })
-    
+
     def test_ingest_new(self):
+        '''
+        Test the situation where CMR is showing granules which are not found
+        on GRQ; preflight should reconcile the difference by beginning new
+        ingest jobs against the new granules from CMR
+        '''
+
         with patch('requests.post') as mock_post:
             # -- CMR Mock --
             mock_cmr_response = Mock(spec=Response)
@@ -432,14 +461,16 @@ class TestPreflight(TestCase):
                     }
                 }
             }
-            
+
             mock_post.return_value = mock_cmr_response
-            
+
             # -- GRQ Mock --
             mock_grq_tile_response = {'hits': {'hits': []}}
             mock_grq_orbit_response = {'hits': {'hits': []}}
-            
-            mock_es_client().search.side_effect = [mock_grq_tile_response, mock_grq_orbit_response]
+
+            mock_es_client().search.side_effect = [
+                mock_grq_tile_response, mock_grq_orbit_response
+            ]
 
             # Lambda handler call
             results = preflight.lambda_handler(self.valid_sqs, None)
@@ -447,18 +478,22 @@ class TestPreflight(TestCase):
             # Assertion checks
             post_calls = mock_post.call_args_list
             self.assertEqual(len(post_calls), 1)
-            self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))
+            self.assertTupleEqual(post_calls[0].args, ('http://cmr-graphql.test/',))  # noqa: E501
             self.assertDictEqual(post_calls[0].kwargs, {
                 'headers': {'Authorization': 'Bearer edl-test-token'},
                 'json': {
-                    'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',
+                    # pylint: disable-next=line-too-long # noqa: E501
+                    'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
                     'variables': {
                         'tileParams': {
-                            'collectionConceptIds': ['test-pixc-concept-id', 'test-pixcvec-concept-id'],
+                            'collectionConceptIds': [
+                                'test-pixc-concept-id',
+                                'test-pixcvec-concept-id'
+                            ],
                             'cycle': '001', 'passes': {
                                 '0': {
                                     'pass': '002',
-                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'
+                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'  # noqa: E501
                                 }
                             }
                         },
@@ -479,10 +514,10 @@ class TestPreflight(TestCase):
                     'bool': {
                         'must': [
                             {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},
+                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},  # pylint: disable=line-too-long # noqa: E501
                             {'term': {'metadata.CycleID': '001'}},
                             {'term': {'metadata.PassID': '002'}},
-                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}
+                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
                         ]
                     }
                 }
@@ -503,8 +538,9 @@ class TestPreflight(TestCase):
                 'size': 1}
             )
 
-            self.assertEqual(preflight.ingest_job_type.submit_job.call_count, 5)
-            
+            # pylint: disable-next=no-member
+            self.assertEqual(preflight.ingest_job_type.submit_job.call_count, 5)  # noqa: E501
+
             # Results check
             self.assertDictEqual(results['inputs'], {
                     'bd18530a-0383-44ec-8cec-4019892afc2e': {
@@ -523,7 +559,7 @@ class TestPreflight(TestCase):
 
             for job in results['jobs']:
                 self.assertEqual(job['job_status'], 'job-queued')
-                self.assertEqual(job['product_id'], 'bd18530a-0383-44ec-8cec-4019892afc2e')
+                self.assertEqual(job['product_id'], 'bd18530a-0383-44ec-8cec-4019892afc2e')  # pylint: disable=line-too-long # noqa: E501
                 self.assertEqual(job['stage'], 'preflight')
 
     def tearDown(self):

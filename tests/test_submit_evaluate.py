@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
-    patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),
+    patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),  # noqa: E501
     patch('otello.mozart.Mozart.get_job_type'),
     patch.dict(os.environ, {
         'SWODLR_ENV': 'dev',
@@ -20,6 +20,7 @@ with (
 ):
     from podaac.swodlr_raster_create import submit_evaluate
 
+
 class TestSubmitEvaluate(TestCase):
     '''Tests for the submit_evaluate module'''
     data_path = Path(__file__).parent.joinpath('data')
@@ -28,6 +29,10 @@ class TestSubmitEvaluate(TestCase):
         success_jobset = json.load(f)
 
     def test_successful_submit(self):
+        '''
+        Test to check that the submit_evaluate module will submit a job to the
+        SDS given that the initial scene granule can be located
+        '''
         with (
             patch.dict(os.environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
@@ -41,13 +46,13 @@ class TestSubmitEvaluate(TestCase):
             # Setup mocks
             submit_evaluate.raster_eval_job_type.submit_job.return_value = \
                 MagicMock(job_id='72c4b5a0-f772-4311-b78d-d0d947b5db11')
-            
+
             # Lambda call
             results = submit_evaluate.lambda_handler(self.success_jobset, None)
 
             # Assertion checks
-            search_ds_mock.assert_called_once_with('SWOT_L2_HR_PIXCVec_001_002_006L_*')
-            submit_evaluate.raster_eval_job_type.submit_job.assert_called_once()
+            search_ds_mock.assert_called_once_with('SWOT_L2_HR_PIXCVec_001_002_006L_*')  # pylint: disable=line-too-long # noqa: E501
+            submit_evaluate.raster_eval_job_type.submit_job.assert_called_once()  # pylint: disable=no-member # noqa: E501
 
             # Results check
             self.assertDictEqual(results, {
@@ -64,7 +69,7 @@ class TestSubmitEvaluate(TestCase):
                         'pass': 2,
                         'scene': 3,
                         'raster_resolution': 100,
-                        'output_sampling_grid_type': 'UTM', 
+                        'output_sampling_grid_type': 'UTM',
                         'output_granule_extent_flag': True,
                         'utm_zone_adjust': 0,
                         'mgrs_band_adjust': 0
@@ -73,6 +78,11 @@ class TestSubmitEvaluate(TestCase):
             })
 
     def test_not_found_submit(self):
+        '''
+        Test to check that the submit_evaluate module will not submit a job to
+        the SDS given that the initial scene granule cannot be located; this
+        process should fail gracefully (eg no raised exceptions)
+        '''
         with (
             patch.dict(os.environ, {
                 'SWODLR_sds_host': 'http://sds-host.test/',
@@ -85,13 +95,13 @@ class TestSubmitEvaluate(TestCase):
         ):
             # Setup mocks
             search_ds_mock.return_value = None
-            
+
             # Lambda call
             results = submit_evaluate.lambda_handler(self.success_jobset, None)
 
             # Assertion checks
-            search_ds_mock.assert_called_once_with('SWOT_L2_HR_PIXCVec_001_002_006L_*')
-            submit_evaluate.raster_eval_job_type.submit_job.assert_not_called()
+            search_ds_mock.assert_called_once_with('SWOT_L2_HR_PIXCVec_001_002_006L_*')  # pylint: disable=line-too-long # noqa: E501
+            submit_evaluate.raster_eval_job_type.submit_job.assert_not_called()  # pylint: disable=no-member # noqa: E501
 
             # Results check
             self.assertDictEqual(results, {
@@ -108,13 +118,14 @@ class TestSubmitEvaluate(TestCase):
                         'pass': 2,
                         'scene': 3,
                         'raster_resolution': 100,
-                        'output_sampling_grid_type': 'UTM', 
+                        'output_sampling_grid_type': 'UTM',
                         'output_granule_extent_flag': True,
                         'utm_zone_adjust': 0,
                         'mgrs_band_adjust': 0
                     }
                 }
             })
-            
+
     def tearDown(self):
+        # pylint: disable-next=no-member
         submit_evaluate.raster_eval_job_type.reset_mock()
