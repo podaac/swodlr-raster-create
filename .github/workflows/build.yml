@@ -161,6 +161,7 @@ jobs:
           TF_VAR_sds_host:         ${{ secrets.SDS_HOST }}
           TF_VAR_sds_username:     ${{ secrets.SDS_USERNAME }}
           TF_VAR_sds_password:     ${{ secrets.SDS_PASSWORD }}
+          TF_VAR_edl_token:        ${{ secrets.EDL_TOKEN }}
           TF_VAR_sds_rs_bucket:    ${{ vars.SDS_RS_BUCKET }}
 
           TF_VAR_publish_bucket:   ${{ vars.PUBLISH_BUCKET }}
