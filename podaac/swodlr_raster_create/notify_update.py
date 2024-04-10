@@ -13,7 +13,7 @@ logger = utils.get_logger(__name__)
 sns: SNSClient = boto3.client('sns')
 
 
-@bulk_job_handler
+@bulk_job_handler(returns_jobset=True)
 def handle_jobs(jobset):
     '''
     Handler which sends each job in a JobSet as a message to a SNS topic
