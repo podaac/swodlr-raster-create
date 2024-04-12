@@ -58,7 +58,9 @@ def handle_jobs(jobset):
             )
 
     if waiting:
-        jobset.update(waiting=waiting)
+        jobset['waiting'] = True
+    elif 'waiting' in jobset:
+        del jobset['waiting']
 
     output = validate_jobset(jobset)
     return output

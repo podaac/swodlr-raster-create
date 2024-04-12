@@ -32,12 +32,14 @@ with (
 ):
     from podaac.swodlr_raster_create import preflight
 
-    MockJob = namedtuple('MockJob', ['job_id', 'status'])
-    preflight.ingest_job_type.submit_job.side_effect = \
-        lambda tag: MockJob(
+    def _mock_submit_job(*_args, **_kwargs):
+        return MockJob(
             job_id=str(uuid4()),
             status='job-queued'
         )
+
+    MockJob = namedtuple('MockJob', ['job_id', 'status'])
+    preflight.ingest_job_type.submit_job.side_effect = _mock_submit_job
 
 
 class TestPreflight(TestCase):
@@ -170,12 +172,14 @@ class TestPreflight(TestCase):
                                 'test-pixc-concept-id',
                                 'test-pixcvec-concept-id'
                             ],
-                            'cycle': '001', 'passes': {
+                            'cycle': 1,
+                            'passes': {
                                 '0': {
-                                    'pass': '002',
-                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'  # noqa: E501
+                                    'pass': 2,
+                                    'tiles': '005L,005R,006L,006R,007L,007R,008L,008R'  # noqa: E501
                                 }
-                            }
+                            },
+                            'limit': 100
                         },
                         'orbitParams': {
                             'collectionConceptId': 'test-xdf-orbit-concept-id',
@@ -190,33 +194,36 @@ class TestPreflight(TestCase):
             self.assertEqual(len(es_search_calls), 2)
             self.assertDictEqual(es_search_calls[0].kwargs, {
                 'index': 'grq',
-                'query': {
-                    'bool': {
-                        'must': [
-                            {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},  # pylint: disable=line-too-long # noqa: E501
-                            {'term': {'metadata.CycleID': '001'}},
-                            {'term': {'metadata.PassID': '002'}},
-                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
-                        ]
+                'body': {
+                    'query': {
+                        'bool': {
+                            'must': [
+                                {'term': {'dataset_type.keyword': 'SDP'}},
+                                {'terms': {'dataset.keyword': ['L2_HR_PIXC', 'L2_HR_PIXCVec']}},  # pylint: disable=line-too-long # noqa: E501
+                                {'term': {'metadata.CycleID': '001'}},
+                                {'term': {'metadata.PassID': '002'}},
+                                {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
+                            ]
+                        }
                     }
-                }
+                },
+                'size': 100
             })
             self.assertDictEqual(es_search_calls[1].kwargs, {
                 'index': 'grq',
-                'query': {
-                    'bool': {
-                        'must': [
-                            {'term': {'dataset_type.keyword': 'AUX'}},
-                            {'term': {'dataset.keyword': 'XDF_ORBIT_REV_FILE'}}
-                        ]
-                    }
+                'body': {
+                    'query': {
+                        'bool': {
+                            'must': [
+                                {'term': {'dataset_type.keyword': 'AUX'}},
+                                {'term': {'dataset.keyword': 'XDF_ORBIT_REV_FILE'}}  # noqa: E501
+                            ]
+                        }
+                    },
+                    'sort': {'endtime': {'order': 'desc'}}
                 },
-                'sort': {
-                    'metadata.FileCreationDateTime': {'order': 'desc'}
-                },
-                'size': 1}
-            )
+                'size': 1
+            })
 
             # Results check
             self.assertDictEqual(results, {
@@ -331,12 +338,14 @@ class TestPreflight(TestCase):
                                 'test-pixc-concept-id',
                                 'test-pixcvec-concept-id'
                             ],
-                            'cycle': '001', 'passes': {
+                            'cycle': 1,
+                            'passes': {
                                 '0': {
-                                    'pass': '002',
-                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'  # noqa: E501
+                                    'pass': 2,
+                                    'tiles': '005L,005R,006L,006R,007L,007R,008L,008R'  # noqa: E501
                                 }
-                            }
+                            },
+                            'limit': 100
                         },
                         'orbitParams': {
                             'collectionConceptId': 'test-xdf-orbit-concept-id',
@@ -351,45 +360,48 @@ class TestPreflight(TestCase):
             self.assertEqual(len(es_search_calls), 2)
             self.assertDictEqual(es_search_calls[0].kwargs, {
                 'index': 'grq',
-                'query': {
-                    'bool': {
-                        'must': [
-                            {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},  # pylint: disable=line-too-long # noqa: E501
-                            {'term': {'metadata.CycleID': '001'}},
-                            {'term': {'metadata.PassID': '002'}},
-                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
-                        ]
+                'body': {
+                    'query': {
+                        'bool': {
+                            'must': [
+                                {'term': {'dataset_type.keyword': 'SDP'}},
+                                {'terms': {'dataset.keyword': ['L2_HR_PIXC', 'L2_HR_PIXCVec']}},  # pylint: disable=line-too-long # noqa: E501
+                                {'term': {'metadata.CycleID': '001'}},
+                                {'term': {'metadata.PassID': '002'}},
+                                {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
+                            ]
+                        }
                     }
-                }
+                },
+                'size': 100
             })
+
             self.assertDictEqual(es_search_calls[1].kwargs, {
                 'index': 'grq',
-                'query': {
-                    'bool': {
-                        'must': [
-                            {'term': {'dataset_type.keyword': 'AUX'}},
-                            {'term': {'dataset.keyword': 'XDF_ORBIT_REV_FILE'}}
-                        ]
-                    }
+                'body': {
+                    'query': {
+                        'bool': {
+                            'must': [
+                                {'term': {'dataset_type.keyword': 'AUX'}},
+                                {'term': {'dataset.keyword': 'XDF_ORBIT_REV_FILE'}}  # noqa: E501
+                            ]
+                        }
+                    },
+                    'sort': {'endtime': {'order': 'desc'}}
                 },
-                'sort': {
-                    'metadata.FileCreationDateTime': {'order': 'desc'}
-                },
-                'size': 1}
-            )
+                'size': 1
+            })
 
             delete_calls = mock_es_client().delete_by_query.call_args_list
             self.assertEqual(len(delete_calls), 1)
             self.assertEqual(delete_calls[0].kwargs['index'], 'grq')
             self.assertCountEqual(
-                delete_calls[0].kwargs['query']['ids']['values'],
+                delete_calls[0].kwargs['body']['query']['ids']['values'],
                 [
                     'SWODLR_TEST_GRANULE_1',
                     'SWODLR_TEST_GRANULE_2',
                     'SWODLR_TEST_GRANULE_3',
-                    'SWODLR_TEST_GRANULE_4',
-                    'SWODLR_TEST_GRANULE_5',
+                    'SWODLR_TEST_GRANULE_4'
                 ]
             )
 
@@ -485,7 +497,7 @@ class TestPreflight(TestCase):
                 'headers': {'Authorization': 'Bearer edl-test-token'},
                 'timeout': 15,
                 'json': {
-                    # pylint: disable-next=line-too-long # noqa: E501
+                    # pylint: disable-next=line-too-long
                     'query': '\n    query($tileParams: GranulesInput, $orbitParams: GranulesInput) {\n        tiles: granules(params: $tileParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n\n        orbit: granules(params: $orbitParams) {\n            items {\n                granuleUr\n                relatedUrls\n            }\n        }\n    }\n    ',  # noqa: E501
                     'variables': {
                         'tileParams': {
@@ -493,12 +505,14 @@ class TestPreflight(TestCase):
                                 'test-pixc-concept-id',
                                 'test-pixcvec-concept-id'
                             ],
-                            'cycle': '001', 'passes': {
+                            'cycle': 1,
+                            'passes': {
                                 '0': {
-                                    'pass': '002',
-                                    'tiles': '002L,002R,003L,003R,004L,004R,005L,005R'  # noqa: E501
+                                    'pass': 2,
+                                    'tiles': '005L,005R,006L,006R,007L,007R,008L,008R'  # noqa: E501
                                 }
-                            }
+                            },
+                            'limit': 100
                         },
                         'orbitParams': {
                             'collectionConceptId': 'test-xdf-orbit-concept-id',
@@ -513,33 +527,36 @@ class TestPreflight(TestCase):
             self.assertEqual(len(es_search_calls), 2)
             self.assertDictEqual(es_search_calls[0].kwargs, {
                 'index': 'grq',
-                'query': {
-                    'bool': {
-                        'must': [
-                            {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'terms': {'dataset.keyword': [['L2_HR_PIXC', 'L2_HR_PIXCVec']]}},  # pylint: disable=line-too-long # noqa: E501
-                            {'term': {'metadata.CycleID': '001'}},
-                            {'term': {'metadata.PassID': '002'}},
-                            {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
-                        ]
+                'body': {
+                    'query': {
+                        'bool': {
+                            'must': [
+                                {'term': {'dataset_type.keyword': 'SDP'}},
+                                {'terms': {'dataset.keyword': ['L2_HR_PIXC', 'L2_HR_PIXCVec']}},  # pylint: disable=line-too-long # noqa: E501
+                                {'term': {'metadata.CycleID': '001'}},
+                                {'term': {'metadata.PassID': '002'}},
+                                {'terms': {'metadata.TileID': ['005', '006', '007', '008']}}  # pylint: disable=line-too-long # noqa: E501
+                            ]
+                        }
                     }
-                }
+                },
+                'size': 100
             })
             self.assertDictEqual(es_search_calls[1].kwargs, {
                 'index': 'grq',
-                'query': {
-                    'bool': {
-                        'must': [
-                            {'term': {'dataset_type.keyword': 'AUX'}},
-                            {'term': {'dataset.keyword': 'XDF_ORBIT_REV_FILE'}}
-                        ]
-                    }
+                'body': {
+                    'query': {
+                        'bool': {
+                            'must': [
+                                {'term': {'dataset_type.keyword': 'AUX'}},
+                                {'term': {'dataset.keyword': 'XDF_ORBIT_REV_FILE'}}  # noqa: E501
+                            ]
+                        }
+                    },
+                    'sort': {'endtime': {'order': 'desc'}}
                 },
-                'sort': {
-                    'metadata.FileCreationDateTime': {'order': 'desc'}
-                },
-                'size': 1}
-            )
+                'size': 1
+            })
 
             # pylint: disable-next=no-member
             self.assertEqual(preflight.ingest_job_type.submit_job.call_count, 5)  # noqa: E501

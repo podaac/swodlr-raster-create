@@ -1,3 +1,6 @@
+[MAIN]
+disable=too-many-locals
+
 [FORMAT]
 # Fixes: "C0103: Variable name "f" doesn't conform to snake_case naming style"
 good-names=f,i

@@ -165,6 +165,7 @@ resource "aws_iam_role" "sfn" {
         Action = "lambda:InvokeFunction"
         Effect   = "Allow"
         Resource = [
+          aws_lambda_function.preflight.arn,
           aws_lambda_function.notify_update.arn,
           aws_lambda_function.publish_data.arn,
           aws_lambda_function.submit_evaluate.arn,
