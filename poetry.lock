@@ -16,17 +16,17 @@ typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "boto3"
-version = "1.34.83"
+version = "1.34.84"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.34.83-py3-none-any.whl", hash = "sha256:33cf93f6de5176f1188c923f4de1ae149ed723b89ed12e434f2b2f628491769e"},
-    {file = "boto3-1.34.83.tar.gz", hash = "sha256:9733ce811bd82feab506ad9309e375a79cabe8c6149061971c17754ce8997551"},
+    {file = "boto3-1.34.84-py3-none-any.whl", hash = "sha256:7a02f44af32095946587d748ebeb39c3fa15b9d7275307ff612a6760ead47e04"},
+    {file = "boto3-1.34.84.tar.gz", hash = "sha256:91e6343474173e9b82f603076856e1d5b7b68f44247bdd556250857a3f16b37b"},
 ]
 
 [package.dependencies]
-botocore = ">=1.34.83,<1.35.0"
+botocore = ">=1.34.84,<1.35.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -35,13 +35,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "boto3-stubs-lite"
-version = "1.34.83"
-description = "Type annotations for boto3 1.34.83 generated with mypy-boto3-builder 7.23.2"
+version = "1.34.84"
+description = "Type annotations for boto3 1.34.84 generated with mypy-boto3-builder 7.23.2"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-stubs-lite-1.34.83.tar.gz", hash = "sha256:86e121c2b7c6765dbd7401a9876cf30cefe9983ab867f19eaf09c474ea41eeef"},
-    {file = "boto3_stubs_lite-1.34.83-py3-none-any.whl", hash = "sha256:1bde9556218ad05d924e160b9a11436c1695e729ef7d52f7706fe28257852dbf"},
+    {file = "boto3_stubs_lite-1.34.84-py3-none-any.whl", hash = "sha256:e66cc02a8fb6d5061c2f96bec7ee33f61ee38bf143a4df91d6182758641363c7"},
+    {file = "boto3_stubs_lite-1.34.84.tar.gz", hash = "sha256:57839db802e6d85696e17bea816f81c486271332e32e0a5bf26bda35d301f00d"},
 ]
 
 [package.dependencies]
@@ -94,7 +94,7 @@ bedrock-agent = ["mypy-boto3-bedrock-agent (>=1.34.0,<1.35.0)"]
 bedrock-agent-runtime = ["mypy-boto3-bedrock-agent-runtime (>=1.34.0,<1.35.0)"]
 bedrock-runtime = ["mypy-boto3-bedrock-runtime (>=1.34.0,<1.35.0)"]
 billingconductor = ["mypy-boto3-billingconductor (>=1.34.0,<1.35.0)"]
-boto3 = ["boto3 (==1.34.83)", "botocore (==1.34.83)"]
+boto3 = ["boto3 (==1.34.84)", "botocore (==1.34.84)"]
 braket = ["mypy-boto3-braket (>=1.34.0,<1.35.0)"]
 budgets = ["mypy-boto3-budgets (>=1.34.0,<1.35.0)"]
 ce = ["mypy-boto3-ce (>=1.34.0,<1.35.0)"]
@@ -440,13 +440,13 @@ xray = ["mypy-boto3-xray (>=1.34.0,<1.35.0)"]
 
 [[package]]
 name = "botocore"
-version = "1.34.83"
+version = "1.34.84"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.34.83-py3-none-any.whl", hash = "sha256:0a3fbbe018416aeefa8978454fb0b8129adbaf556647b72269bf02e4bf1f4161"},
-    {file = "botocore-1.34.83.tar.gz", hash = "sha256:0f302aa76283d4df62b4fbb6d3d20115c1a8957fc02171257fc93904d69d5636"},
+    {file = "botocore-1.34.84-py3-none-any.whl", hash = "sha256:da1ae0a912e69e10daee2a34dafd6c6c106450d20b8623665feceb2d96c173eb"},
+    {file = "botocore-1.34.84.tar.gz", hash = "sha256:a2b309bf5594f0eb6f63f355ade79ba575ce8bf672e52e91da1a7933caa245e6"},
 ]
 
 [package.dependencies]
@@ -1114,7 +1114,7 @@ files = [
 
 [[package]]
 name = "swodlr-common"
-version = "0.1.1-alpha8"
+version = "0.1.1-alpha10"
 description = "A support library for SWODLR Python microservices containing common utilities, models, and JSON schemas"
 optional = false
 python-versions = "^3.9"
@@ -1130,8 +1130,8 @@ requests = "^2.31.0"
 [package.source]
 type = "git"
 url = "https://github.com/podaac/swodlr-common-py.git"
-reference = "job-version-hotfix"
-resolved_reference = "07309ec0717b626bb522f0a66cdb887b487b338e"
+reference = "develop"
+resolved_reference = "8d01907a5df18c79baa8d894dba24fbcce1fd021"
 
 [[package]]
 name = "toml"
@@ -1218,4 +1218,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "27985dbed9138592388691f9db332df0f859872fbfff1ef9146fe46b82dab806"
+content-hash = "cd53ebc21a796e055407ff781f560ee6eba2744a81f7a1e3cdc1e35a85c7831d"
