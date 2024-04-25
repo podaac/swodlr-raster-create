@@ -59,6 +59,7 @@ def _process_input(input_):
     ]
 
     try:
+        # pylint: disable-next=unexpected-keyword-arg
         results = grq_es_client.search(
             index='grq',
             size=10,

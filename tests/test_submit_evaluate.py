@@ -10,7 +10,7 @@ with (
     patch('boto3.resource'),
     patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),  # noqa: E501
     patch('otello.mozart.Mozart.get_job_type'),
-    patch('podaac.swodlr_raster_create.utilities.utils.get_grq_es_client') as mock_es_client,  # pylint: disable-next=line-too-long # noqa: E501
+    patch('podaac.swodlr_raster_create.utilities.utils.get_grq_es_client') as mock_es_client,  # pylint: disable=line-too-long # noqa: E501
     patch.dict(os.environ, {
         'SWODLR_ENV': 'dev',
         'SWODLR_sds_username': 'sds_username',
@@ -49,6 +49,7 @@ class TestSubmitEvaluate(TestCase):
 
         # Assertion checks
         mock_es_client().search.assert_called_once_with(
+            # pylint: disable=duplicate-code
             index='grq',
             size=10,
             body={
@@ -104,6 +105,7 @@ class TestSubmitEvaluate(TestCase):
 
         # Assertion checks
         mock_es_client().search.assert_called_once_with(
+            # pylint: disable=duplicate-code
             index='grq',
             size=10,
             body={
