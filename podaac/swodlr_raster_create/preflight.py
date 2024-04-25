@@ -108,7 +108,9 @@ def _find_cmr_granules(cycle, passe, scene) -> tuple[Granule, Granule]:
     '''
 
     tile_ids = ''.join([
-        f'{i:03}L,{i:03}R,' for i in range((scene * 2) - 1, (scene * 2) + 3)
+        # Tiles are doubled up with 0-padding to duct tape over a collection
+        # bug. Remove once the collection is fixed
+        f'{i}L,{i}R,{i:03}L,{i:03}R,' for i in range((scene * 2) - 1, (scene * 2) + 3)
     ])
     variables = {
         'tileParams': {
