@@ -176,7 +176,7 @@ class TestPreflight(TestCase):
                             'passes': {
                                 '0': {
                                     'pass': 2,
-                                    'tiles': '005L,005R,006L,006R,007L,007R,008L,008R'  # noqa: E501
+                                    'tiles': '5L,5R,005L,005R,6L,6R,006L,006R,7L,7R,007L,007R,8L,8R,008L,008R'  # noqa: E501
                                 }
                             },
                             'limit': 100
@@ -342,7 +342,7 @@ class TestPreflight(TestCase):
                             'passes': {
                                 '0': {
                                     'pass': 2,
-                                    'tiles': '005L,005R,006L,006R,007L,007R,008L,008R'  # noqa: E501
+                                    'tiles': '5L,5R,005L,005R,6L,6R,006L,006R,7L,7R,007L,007R,8L,8R,008L,008R'  # noqa: E501
                                 }
                             },
                             'limit': 100
@@ -509,7 +509,7 @@ class TestPreflight(TestCase):
                             'passes': {
                                 '0': {
                                     'pass': 2,
-                                    'tiles': '005L,005R,006L,006R,007L,007R,008L,008R'  # noqa: E501
+                                    'tiles': '5L,5R,005L,005R,6L,6R,006L,006R,7L,7R,007L,007R,8L,8R,008L,008R'  # noqa: E501
                                 }
                             },
                             'limit': 100
