@@ -85,6 +85,7 @@ def _process_input(input_):
         )
         return output
 
+    logger.debug('GRQ results: %s', str(results))
     hits = results['hits']['hits']
 
     if len(hits) == 0:
@@ -98,7 +99,7 @@ def _process_input(input_):
         )
         return output
 
-    raster_eval_job_type.set_input_dataset(hits[0])
+    raster_eval_job_type.set_input_dataset(hits[0]['_source'])
 
     for i in range(1, MAX_ATTEMPTS + 1):
         try:
