@@ -16,6 +16,8 @@ PCM_RELEASE_TAG = utils.get_param('sds_pcm_release_tag')
 MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
 TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
+grq_es_client = utils.get_grq_es_client()
+
 logger = utils.get_logger(__name__)
 validate_jobset = utils.load_json_schema('jobset')
 
@@ -47,14 +49,34 @@ def _process_input(input_):
         'product_id': input_['product_id']
     }
 
-    cycle = str(input_['cycle']).rjust(3, '0')
-    passe = str(input_['pass']).rjust(3, '0')
-    tile = _scene_to_tile(input_['scene'])  # Josh: 3:<
+    cycle = input_['cycle']
+    passe = input_['pass']
+    scene = input_['scene']
 
-    pixcvec_granule_name = f'{DATASET_NAME}_{cycle}_{passe}_{tile}_*'
+    # 3: - Josh
+    tiles = [
+        str(f'{tile:03}') for tile in range((scene * 2) - 1, (scene * 2) + 1)
+    ]
 
     try:
-        granule = utils.search_datasets(pixcvec_granule_name)
+        # pylint: disable-next=unexpected-keyword-arg
+        results = grq_es_client.search(
+            index='grq',
+            size=10,
+            body={
+                'query': {
+                    'bool': {
+                        'must': [
+                            {'term': {'dataset_type.keyword': 'SDP'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
+                            {'term': {'metadata.CycleID': f'{cycle:03}'}},
+                            {'term': {'metadata.PassID': f'{passe:03}'}},
+                            {'terms': {'metadata.TileID': tiles}}
+                        ]
+                    }
+                }
+            }
+        )
     except RequestException:
         logger.exception('ES request failed')
         output.update(
@@ -63,10 +85,12 @@ def _process_input(input_):
         )
         return output
 
-    if granule is None:
+    hits = results['hits']['hits']
+
+    if len(hits) == 0:
         logger.error(
-            'ES search returned no results: %s',
-            pixcvec_granule_name
+            'ES search returned no results - cycle: %d, pass: %d, scene: %d',
+            cycle, passe, scene
         )
         output.update(
             job_status='job-failed',
@@ -74,7 +98,7 @@ def _process_input(input_):
         )
         return output
 
-    raster_eval_job_type.set_input_dataset(granule)
+    raster_eval_job_type.set_input_dataset(hits[0])
 
     for i in range(1, MAX_ATTEMPTS + 1):
         try:
@@ -101,12 +125,3 @@ def _process_input(input_):
         errors=['SDS failed to accept job']
     )
     return output
-
-
-def _scene_to_tile(scene_id):
-    '''
-    Converts a scene id to the first tile id in the set
-    TODO: REMOVE THIS ONCE THE SDS ACCEPTS EXPLICIT SCENE IDS
-    '''
-    base = str(scene_id * 2).rjust(3, '0')
-    return f'{base}L'
