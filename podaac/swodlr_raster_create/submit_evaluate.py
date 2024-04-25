@@ -68,7 +68,7 @@ def _process_input(input_):
                     'bool': {
                         'must': [
                             {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'term': {'dataset.keyword': 'L2_HR_PIXCVec'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
                             {'term': {'metadata.CycleID': f'{cycle:03}'}},
                             {'term': {'metadata.PassID': f'{passe:03}'}},
                             {'terms': {'metadata.TileID': tiles}}

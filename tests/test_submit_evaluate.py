@@ -57,7 +57,7 @@ class TestSubmitEvaluate(TestCase):
                     'bool': {
                         'must': [
                             {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'term': {'dataset.keyword': 'L2_HR_PIXCVec'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
                             {'term': {'metadata.CycleID': '001'}},
                             {'term': {'metadata.PassID': '002'}},
                             {'terms': {'metadata.TileID': ['005', '006']}}
@@ -113,7 +113,7 @@ class TestSubmitEvaluate(TestCase):
                     'bool': {
                         'must': [
                             {'term': {'dataset_type.keyword': 'SDP'}},
-                            {'term': {'dataset.keyword': 'L2_HR_PIXCVec'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
                             {'term': {'metadata.CycleID': '001'}},
                             {'term': {'metadata.PassID': '002'}},
                             {'terms': {'metadata.TileID': ['005', '006']}}
