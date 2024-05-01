@@ -18,7 +18,7 @@ TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
 validate_jobset = utils.load_json_schema('jobset')
 raster_job_type = utils.mozart_client.get_job_type(
-    f'job-SCIFLO_L2_HR_Raster:{PCM_RELEASE_TAG}'
+    utils.get_latest_job_version('job-SCIFLO_L2_HR_Raster')
 )
 raster_job_type.initialize()
 
