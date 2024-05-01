@@ -1115,7 +1115,7 @@ files = [
 
 [[package]]
 name = "swodlr-common"
-version = "0.1.1-alpha10"
+version = "0.1.1-alpha11"
 description = "A support library for SWODLR Python microservices containing common utilities, models, and JSON schemas"
 optional = false
 python-versions = "^3.9"
@@ -1131,8 +1131,8 @@ requests = "^2.31.0"
 [package.source]
 type = "git"
 url = "https://github.com/podaac/swodlr-common-py.git"
-reference = "auto-versioning-hotfix"
-resolved_reference = "0e338a36cb27bade2da214a190770beb1be8c2b7"
+reference = "develop"
+resolved_reference = "d03c82c23daa89ec3f65bd7b83cb0149d5b28fb1"
 
 [[package]]
 name = "toml"
@@ -1219,4 +1219,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "42416c417bedeae1906de83f6ce8df12fa4599567f30ce70162376598f5be254"
+content-hash = "cd53ebc21a796e055407ff781f560ee6eba2744a81f7a1e3cdc1e35a85c7831d"
