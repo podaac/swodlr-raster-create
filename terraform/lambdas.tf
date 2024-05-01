@@ -315,6 +315,7 @@ resource "aws_ssm_parameter" "publish_bucket" {
 }
 
 resource "aws_ssm_parameter" "sds_pcm_release_tag" {
+  count = var.sds_pcm_release_tag == null ? 0 : 1
   name  = "${local.service_path}/sds_pcm_release_tag"
   type  = "String"
   overwrite = true

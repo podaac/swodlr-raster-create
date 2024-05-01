@@ -43,6 +43,7 @@ variable "xdf_orbit_concept_id" {
 
 variable "sds_pcm_release_tag" {
     type = string
+    default = null
 }
 
 variable "sds_host" {
