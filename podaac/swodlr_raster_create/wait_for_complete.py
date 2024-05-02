@@ -42,19 +42,24 @@ def handle_jobs(jobset):
             job_status = 'job-timedout'  # Custom Swodlr status
 
         if job_status in sds_statuses.WAITING:
-            job_logger.info('Waiting for job')
+            job_logger.info('Waiting for job; status: %s', job_status)
             waiting = True
         else:
+            job_logger.info('Job finished; status: %s', job_status)
+            
             job_logger.debug('Pulling metrics out')
             metrics = _extract_metrics(job_info)
-            job_logger.info('SDS metrics: %s', json.dumps(metrics))
+            job_logger.info('SDS metrics: %s', json.dumps({
+                'metrics': metrics,
+                'input': jobset['inputs'][job['product_id']]
+            }))
 
         job['job_status'] = job_status  # Update job in JobSet
 
         if 'traceback' in job_info:
             job.update(
                 traceback=job_info['traceback'],
-                errors=['SDS threw an error']
+                errors=['SDS threw an error. Please contact support']
             )
 
     if waiting:
