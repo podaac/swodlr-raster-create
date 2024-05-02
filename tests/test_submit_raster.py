@@ -11,12 +11,14 @@ from uuid import uuid4
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
+    patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),  # noqa: E501
     patch('otello.mozart.Mozart.get_job_type'),
     # pylint: disable=duplicate-code
     patch.dict(environ, {
         'SWODLR_ENV': 'dev',
         'SWODLR_sds_username': 'sds_username',
         'SWODLR_sds_password': 'sds_password',
+        'SWODLR_sds_host': 'http://sds-host.test/',
         'SWODLR_sds_submit_max_attempts': '1',
         'SWODLR_sds_submit_timeout': '0'
     })
