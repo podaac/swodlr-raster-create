@@ -249,7 +249,7 @@ def _ingest_granules(granules):
 
     for granule in granules:
         logger.info('Ingesting: %s', granule)
-        
+
         filename = PurePath(urlparse(granule.url).path).name
         ingest_job_type.set_input_params(_gen_mozart_job_params(
             filename, granule.url
@@ -272,7 +272,7 @@ def _ingest_granules(granules):
 def _delete_grq_granules(granules):
     for granule in granules:
         logger.info('Deleting: %s', granule)
-    
+
     grq_es_client.delete_by_query(index='grq', body={
         'query': {
             'ids': {'values': [granule.name for granule in granules]}
