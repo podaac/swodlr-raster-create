@@ -70,9 +70,6 @@ def lambda_handler(event, _context):
         # Don't delete orbit files
         to_delete = grq_pixc_granules - cmr_pixc_granules
 
-        logger.debug('To ingest: %s', to_ingest)
-        logger.debug('To delete: %s', to_delete)
-
         ingest_jobs = _ingest_granules(to_ingest)
         _delete_grq_granules(to_delete)
 
@@ -240,6 +237,7 @@ def _find_s3_link(related_urls):
             continue
 
         if urlparse(url['url']).scheme.lower() == 's3':
+            logger.debug('Found S3 URL: %s', url['url'])
             return url['url']
 
     logger.warning('No S3 links found')
@@ -250,6 +248,8 @@ def _ingest_granules(granules):
     jobs = []
 
     for granule in granules:
+        logger.info('Ingesting: %s', granule)
+
         filename = PurePath(urlparse(granule.url).path).name
         ingest_job_type.set_input_params(_gen_mozart_job_params(
             filename, granule.url
@@ -270,6 +270,9 @@ def _ingest_granules(granules):
 
 
 def _delete_grq_granules(granules):
+    for granule in granules:
+        logger.info('Deleting: %s', granule)
+
     grq_es_client.delete_by_query(index='grq', body={
         'query': {
             'ids': {'values': [granule.name for granule in granules]}

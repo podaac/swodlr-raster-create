@@ -6,6 +6,7 @@ consisting of raster jobs
 from time import sleep
 
 from requests import RequestException
+from podaac.swodlr_common.logging import JobMetadataInjector
 from podaac.swodlr_common.decorators import job_handler
 from podaac.swodlr_common import sds_statuses
 
@@ -16,6 +17,7 @@ PCM_RELEASE_TAG = utils.get_param('sds_pcm_release_tag')
 MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
 TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
+logger = utils.get_logger(__name__)
 validate_jobset = utils.load_json_schema('jobset')
 raster_job_type = utils.mozart_client.get_job_type(
     utils.get_latest_job_version('job-SCIFLO_L2_HR_Raster')
@@ -91,6 +93,10 @@ def handle_job(eval_job, job_logger, input_params):
                 job_id=sds_job.job_id,
                 job_status='job-queued'
             )
+
+            raster_job_logger = JobMetadataInjector(logger, raster_job)
+            raster_job_logger.info('Job queued on SDS')
+
             return raster_job
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught

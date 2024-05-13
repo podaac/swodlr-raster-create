@@ -8,6 +8,7 @@ from time import sleep
 from requests import RequestException
 
 from podaac.swodlr_common.decorators import bulk_job_handler
+from podaac.swodlr_common.logging import JobMetadataInjector
 from .utilities import utils
 
 STAGE = __name__.rsplit('.', 1)[1]
@@ -111,6 +112,10 @@ def _process_input(input_):
                 job_id=job.job_id,
                 job_status='job-queued'
             )
+
+            job_logger = JobMetadataInjector(logger, output)
+            job_logger.info('Job queued on SDS')
+
             return output
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught
