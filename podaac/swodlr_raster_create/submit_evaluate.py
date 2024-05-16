@@ -61,7 +61,7 @@ def _process_input(input_):
 
     try:
         # pylint: disable-next=unexpected-keyword-arg
-        results = grq_es_client.search(
+        results: dict = grq_es_client.search(
             index='grq',
             size=10,
             body={
@@ -87,7 +87,7 @@ def _process_input(input_):
         return output
 
     logger.debug('GRQ results: %s', str(results))
-    hits = results['hits']['hits']
+    hits = results['hits']['hits']  # pylint: disable=unsubscriptable-object
 
     if len(hits) == 0:
         logger.error(
