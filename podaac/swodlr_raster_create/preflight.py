@@ -219,7 +219,7 @@ def _find_grq_granules(cycle, passe, scene) -> tuple[Granule, Granule]:
     for dataset in (pixc_results, orbit_results):
         granules = set()
 
-        for result in dataset['hits']['hits']:
+        for result in dataset['hits']['hits']:  # pylint: disable=unsubscriptable-object # noqa: E501
             metadata = result['_source']['metadata']
             granules.add(Granule(metadata['id'], metadata['ISL_urls']))
 
