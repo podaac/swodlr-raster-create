@@ -16,7 +16,8 @@ with (
         'SWODLR_edl_token': 'edl-test-token',
         'SWODLR_pixc_concept_id': 'test-pixc-concept-id',
         'SWODLR_pixcvec_concept_id': 'test-pixcvec-concept-id',
-        'SWODLR_xdf_orbit_concept_id': 'test-xdf-orbit-concept-id',
+        'SWODLR_xdf_orbit_1.0_concept_id': 'test-xdf-orbit-1.0-concept-id',
+        'SWODLR_xdf_orbit_2.0_concept_id': 'test-xdf-orbit-2.0-concept-id',
         'SWODLR_cmr_graphql_endpoint': 'http://cmr-graphql.test/',
         'SWODLR_sds_host': 'http://sds-host.test/',
         'SWODLR_sds_username': 'sds_username',
@@ -182,7 +183,7 @@ class TestPreflight(TestCase):
                             'limit': 100
                         },
                         'orbitParams': {
-                            'collectionConceptId': 'test-xdf-orbit-concept-id',
+                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',  # pylint: disable=line-too-long # noqa: E501
                             'sortKey': '-end_date',
                             'limit': 1
                         }
@@ -348,7 +349,7 @@ class TestPreflight(TestCase):
                             'limit': 100
                         },
                         'orbitParams': {
-                            'collectionConceptId': 'test-xdf-orbit-concept-id',
+                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',  # pylint: disable=line-too-long # noqa: E501
                             'sortKey': '-end_date',
                             'limit': 1
                         }
@@ -515,7 +516,7 @@ class TestPreflight(TestCase):
                             'limit': 100
                         },
                         'orbitParams': {
-                            'collectionConceptId': 'test-xdf-orbit-concept-id',
+                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',  # pylint: disable=line-too-long # noqa: E501
                             'sortKey': '-end_date',
                             'limit': 1
                         }
