@@ -183,7 +183,7 @@ class TestPreflight(TestCase):
                             'limit': 100
                         },
                         'orbitParams': {
-                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',
+                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',  # pylint: disable=line-too-long # noqa: E501
                             'sortKey': '-end_date',
                             'limit': 1
                         }
@@ -349,7 +349,7 @@ class TestPreflight(TestCase):
                             'limit': 100
                         },
                         'orbitParams': {
-                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',
+                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',  # pylint: disable=line-too-long # noqa: E501
                             'sortKey': '-end_date',
                             'limit': 1
                         }
@@ -516,7 +516,7 @@ class TestPreflight(TestCase):
                             'limit': 100
                         },
                         'orbitParams': {
-                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',
+                            'collectionConceptId': 'test-xdf-orbit-2.0-concept-id',  # pylint: disable=line-too-long # noqa: E501
                             'sortKey': '-end_date',
                             'limit': 1
                         }

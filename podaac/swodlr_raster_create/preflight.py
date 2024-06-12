@@ -125,8 +125,8 @@ def _find_cmr_granules(cycle, passe, scene) -> tuple[Granule, Granule]:
         },
 
         'orbitParams': {
-            'collectionConceptId': XDF_ORBIT_1_0_CONCEPT_ID if passe >= 400 \
-                else XDF_ORBIT_2_0_CONCEPT_ID,
+            'collectionConceptId': XDF_ORBIT_1_0_CONCEPT_ID if passe >= 400
+            else XDF_ORBIT_2_0_CONCEPT_ID,
             'sortKey': '-end_date',
             'limit': 1
         }
