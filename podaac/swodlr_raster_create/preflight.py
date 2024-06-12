@@ -12,7 +12,8 @@ EDL_TOKEN = utils.get_param('edl_token')
 GRAPHQL_ENDPOINT = utils.get_param('cmr_graphql_endpoint')
 PIXC_CONCEPT_ID = utils.get_param('pixc_concept_id')
 PIXCVEC_CONCEPT_ID = utils.get_param('pixcvec_concept_id')
-XDF_ORBIT_CONCEPT_ID = utils.get_param('xdf_orbit_concept_id')
+XDF_ORBIT_1_0_CONCEPT_ID = utils.get_param('xdf_orbit_1.0_concept_id')
+XDF_ORBIT_2_0_CONCEPT_ID = utils.get_param('xdf_orbit_2.0_concept_id')
 
 grq_es_client = utils.get_grq_es_client()
 
@@ -124,7 +125,8 @@ def _find_cmr_granules(cycle, passe, scene) -> tuple[Granule, Granule]:
         },
 
         'orbitParams': {
-            'collectionConceptId': XDF_ORBIT_CONCEPT_ID,
+            'collectionConceptId': XDF_ORBIT_1_0_CONCEPT_ID if passe >= 400 \
+                else XDF_ORBIT_2_0_CONCEPT_ID,
             'sortKey': '-end_date',
             'limit': 1
         }
