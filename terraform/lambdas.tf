@@ -435,7 +435,7 @@ resource "aws_ssm_parameter" "xdf_orbit_1_0_concept_id" {
 }
 
 resource "aws_ssm_parameter" "xdf_orbit_2_0_concept_id" {
-  name  = "${local.service_path}/xdf_orbit_concept_id"
+  name  = "${local.service_path}/xdf_orbit_2.0_concept_id"
   type  = "String"
   overwrite = true
   value = var.xdf_orbit_2_0_concept_id
