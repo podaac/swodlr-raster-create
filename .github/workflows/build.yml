@@ -3,7 +3,13 @@ name: Build 'n Deploy
 on: 
   push:
     branches:
-      - '*'
+      - main
+      - develop
+      - 'release/**'
+      - 'feature/**'
+      - 'issue/**'
+      - 'issues/**'
+      - 'dependabot/**'
     tags-ignore:
       - '*'
     paths-ignore:
@@ -42,11 +48,14 @@ jobs:
       - name: Initial checkout ${{ github.ref }}
         if: github.event.inputs.commit == ''
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.podaac-cicd.outputs.token }}
       - name: Adjust to proper commit hash ${{ github.event.inputs.commit }}
         if: github.event.inputs.commit != ''
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.commit }}
+          token: ${{ steps.podaac-cicd.outputs.token }}
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
