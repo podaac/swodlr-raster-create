@@ -6,5 +6,18 @@
       "job_id": "3a6f4ed5-6509-42fc-afdd-54cd8831b86e",
       "stage": "testing"
     }
-  ]
+  ],
+  "inputs": {
+    "ab32d0a3-b695-4815-8b2c-5d7424495e0a": {
+      "product_id": "ab32d0a3-b695-4815-8b2c-5d7424495e0a",
+      "cycle": 1,
+      "pass": 2,
+      "scene": 3,
+      "raster_resolution": 100,
+      "output_sampling_grid_type": "UTM",
+      "output_granule_extent_flag": true,
+      "utm_zone_adjust": 0,
+      "mgrs_band_adjust": 0
+    }
+  }
 }

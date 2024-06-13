@@ -1,127 +1,153 @@
-'''Tests for the submit_evaluate module'''
-from collections import namedtuple
+'''Tests the submit_evaluate module'''
 import json
 import os
 from pathlib import Path
 from unittest import TestCase
-from unittest.mock import patch
-from uuid import uuid4
+from unittest.mock import MagicMock, patch
 
-
-# pylint: disable=duplicate-code
 with (
     patch('boto3.client'),
     patch('boto3.resource'),
+    patch('podaac.swodlr_common.utilities.BaseUtilities.get_latest_job_version'),  # noqa: E501
     patch('otello.mozart.Mozart.get_job_type'),
+    patch('podaac.swodlr_raster_create.utilities.utils.get_grq_es_client') as mock_es_client,  # pylint: disable=line-too-long # noqa: E501
     patch.dict(os.environ, {
         'SWODLR_ENV': 'dev',
         'SWODLR_sds_username': 'sds_username',
         'SWODLR_sds_password': 'sds_password',
         'SWODLR_sds_submit_max_attempts': '1',
-        'SWODLR_sds_submit_timeout': '0'
+        'SWODLR_sds_submit_timeout': '0',
+        'SWODLR_sds_host': 'http://sds-host.test/',
+        'SWODLR_sds_grq_es_path': '/grq_es',
+        'SWODLR_sds_grq_es_index': 'grq'
     })
 ):
     from podaac.swodlr_raster_create import submit_evaluate
-
-    MockJob = namedtuple('MockJob', ['job_id', 'status'])
-    submit_evaluate.raster_eval_job_type.submit_job.side_effect = \
-        lambda tag: MockJob(
-            job_id=str(uuid4()),
-            status='job-queued'
-        )
 
 
 class TestSubmitEvaluate(TestCase):
     '''Tests for the submit_evaluate module'''
     data_path = Path(__file__).parent.joinpath('data')
-    valid_sqs_path = data_path.joinpath('valid_sqs.json')
-    invalid_sqs_path = data_path.joinpath('invalid_sqs.json')
-    with valid_sqs_path.open('r', encoding='utf-8') as f:
-        valid_sqs = json.load(f)
-    with invalid_sqs_path.open('r', encoding='utf-8') as f:
-        invalid_sqs = json.load(f)
+    success_jobset_path = data_path.joinpath('success_jobset.json')
+    with success_jobset_path.open('r', encoding='utf-8') as f:
+        success_jobset = json.load(f)
 
-    def test_valid_submit(self):
+    def test_successful_submit(self):
         '''
-        Test that three input records from an SQS message get translated to
-        three jobs in the outputted jobset
+        Test to check that the submit_evaluate module will submit a job to the
+        SDS given that the initial scene granule can be located
         '''
-        with (
-            patch.dict(os.environ, {
-                'SWODLR_sds_host': 'http://sds-host.test/',
-                'SWODLR_sds_grq_es_path': '/grq_es',
-                'SWODLR_sds_grq_es_index': 'grq'
-            }),
-            patch(
-                'podaac.swodlr_raster_create.utilities.utils.search_datasets'
-            ) as search_ds_mock
-        ):
-            results = submit_evaluate.lambda_handler(self.valid_sqs, None)
 
-        # 3 inputted records should = 3 outputted jobs
-        self.assertEqual(len(results['jobs']), 3)
+        # Setup mocks
+        mock_es_client().search.return_value = {'hits': {'hits': [
+            MagicMock()]}}
+        submit_evaluate.raster_eval_job_type.submit_job.return_value = \
+            MagicMock(job_id='72c4b5a0-f772-4311-b78d-d0d947b5db11')
 
-        # Assert that stage is properly set on each job
-        for job in results['jobs']:
-            self.assertEqual(job['stage'], 'submit_evaluate')
+        # Lambda call
+        results = submit_evaluate.lambda_handler(self.success_jobset, None)
 
-        # Check that ES search call performed with proper transformations
-        valid_searches = [
-            'SWOT_L2_HR_PIXCVec_001_002_006L_*',
-            'SWOT_L2_HR_PIXCVec_004_005_012L_*',
-            'SWOT_L2_HR_PIXCVec_007_008_018L_*'
-        ]
-        for call in search_ds_mock.call_args_list:
-            search = call.args[0]
-            self.assertIn(search, valid_searches)
-            valid_searches.remove(search)
+        # Assertion checks
+        mock_es_client().search.assert_called_once_with(
+            # pylint: disable=duplicate-code
+            index='grq',
+            size=10,
+            body={
+                'query': {
+                    'bool': {
+                        'must': [
+                            {'term': {'dataset_type.keyword': 'SDP'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
+                            {'term': {'metadata.CycleID': '001'}},
+                            {'term': {'metadata.PassID': '002'}},
+                            {'terms': {'metadata.TileID': ['005', '006']}}
+                        ]
+                    }
+                }
+            }
+        )
+        submit_evaluate.raster_eval_job_type.submit_job.assert_called_once()  # pylint: disable=no-member # noqa: E501
+        # Results check
+        self.assertDictEqual(results, {
+            'jobs': [{
+                'stage': 'submit_evaluate',
+                'product_id': '24168643-1002-45f5-a059-0b5266bc28f3',
+                'job_id': '72c4b5a0-f772-4311-b78d-d0d947b5db11',
+                'job_status': 'job-queued'
+            }],
+            'inputs': {
+                '24168643-1002-45f5-a059-0b5266bc28f3': {
+                    'product_id': '24168643-1002-45f5-a059-0b5266bc28f3',
+                    'cycle': 1,
+                    'pass': 2,
+                    'scene': 3,
+                    'raster_resolution': 100,
+                    'output_sampling_grid_type': 'UTM',
+                    'output_granule_extent_flag': True,
+                    'utm_zone_adjust': 0,
+                    'mgrs_band_adjust': 0
+                }
+            }
+        })
 
-        # Check Otello calls performed
-        input_dataset_calls = submit_evaluate.raster_eval_job_type \
-            .set_input_dataset.call_args_list  # pylint: disable=no-member
-        submit_calls = submit_evaluate.raster_eval_job_type.submit_job \
-            .call_args_list  # pylint: disable=no-member
-
-        self.assertEqual(len(input_dataset_calls), 3)
-        self.assertEqual(len(submit_calls), 3)
-
-    def test_no_pixcvec_error(self):
+    def test_not_found_submit(self):
         '''
-        Test that a jobset containing a invalid request fails gracefully while
-        still fulfilling the valid request
+        Test to check that the submit_evaluate module will not submit a job to
+        the SDS given that the initial scene granule cannot be located; this
+        process should fail gracefully (eg no raised exceptions)
         '''
-        dataset_results = {
-            'SWOT_L2_HR_PIXCVec_001_002_006L_*': {},
-            'SWOT_L2_HR_PIXCVec_004_005_012L_*': None
-        }
 
-        with (
-            patch.dict(os.environ, {
-                'SWODLR_sds_host': 'http://sds-host.test/',
-                'SWODLR_sds_grq_es_path': '/grq_es',
-                'SWODLR_sds_grq_es_index': 'grq'
-            }),
-            patch(
-                'podaac.swodlr_raster_create.utilities.utils.search_datasets'
-            ) as search_ds_mock,
-        ):
-            search_ds_mock.side_effect = dataset_results.pop
-            results = submit_evaluate.lambda_handler(self.invalid_sqs, None)
+        # Setup mocks
+        mock_es_client().search.return_value = {'hits': {'hits': []}}
 
-        # Check that all the search results were returned
-        self.assertEqual(len(dataset_results), 0)
+        # Lambda call
+        results = submit_evaluate.lambda_handler(self.success_jobset, None)
 
-        # Check that the returned jobs are properly accepted/rejected
-        for job in results['jobs']:
-            if job['product_id'] == 'd8fa2f55-2290-42fb-9086-36fbcc5c00d0':
-                self.assertEqual(job['job_status'], 'job-failed')
-                self.assertEqual(job['errors'], ['Scene does not exist'])
-            else:
-                self.assertEqual(job['job_status'], 'job-queued')
+        # Assertion checks
+        mock_es_client().search.assert_called_once_with(
+            # pylint: disable=duplicate-code
+            index='grq',
+            size=10,
+            body={
+                'query': {
+                    'bool': {
+                        'must': [
+                            {'term': {'dataset_type.keyword': 'SDP'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
+                            {'term': {'metadata.CycleID': '001'}},
+                            {'term': {'metadata.PassID': '002'}},
+                            {'terms': {'metadata.TileID': ['005', '006']}}
+                        ]
+                    }
+                }
+            }
+        )
+        submit_evaluate.raster_eval_job_type.submit_job.assert_not_called()  # pylint: disable=no-member # noqa: E501
+
+        # Results check
+        self.assertDictEqual(results, {
+            'jobs': [{
+                'stage': 'submit_evaluate',
+                'product_id': '24168643-1002-45f5-a059-0b5266bc28f3',
+                'job_status': 'job-failed',
+                'errors': ['Scene does not exist']
+            }],
+            'inputs': {
+                '24168643-1002-45f5-a059-0b5266bc28f3': {
+                    'product_id': '24168643-1002-45f5-a059-0b5266bc28f3',
+                    'cycle': 1,
+                    'pass': 2,
+                    'scene': 3,
+                    'raster_resolution': 100,
+                    'output_sampling_grid_type': 'UTM',
+                    'output_granule_extent_flag': True,
+                    'utm_zone_adjust': 0,
+                    'mgrs_band_adjust': 0
+                }
+            }
+        })
 
     def tearDown(self):
-        # pylint: disable=no-member
-        submit_evaluate.raster_eval_job_type.set_input_dataset.reset_mock()
-        submit_evaluate.raster_eval_job_type.set_input_params.reset_mock()
-        submit_evaluate.raster_eval_job_type.submit_job.reset_mock()
-        # pylint: enable=no-member
+        # pylint: disable-next=no-member
+        submit_evaluate.raster_eval_job_type.reset_mock()
+        mock_es_client.reset_mock()

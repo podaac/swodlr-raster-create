@@ -22,6 +22,23 @@ resource "aws_lambda_function" "notify_update" {
   source_code_hash = filebase64sha256("${path.module}/../dist/${local.name}-${local.version}.zip")
 }
 
+resource "aws_lambda_function" "preflight" {
+  function_name = "${local.service_prefix}-preflight"
+  timeout = 30
+  handler = "podaac.swodlr_raster_create.preflight.lambda_handler"
+
+  role = aws_iam_role.lambda.arn
+  runtime = "python3.9"
+
+  filename = "${path.module}/../dist/${local.name}-${local.version}.zip"
+  source_code_hash = filebase64sha256("${path.module}/../dist/${local.name}-${local.version}.zip")
+
+  vpc_config {
+    security_group_ids = [aws_security_group.default.id]
+    subnet_ids = data.aws_subnets.private.ids
+  }
+}
+
 resource "aws_lambda_function" "publish_data" {
   function_name = "${local.service_prefix}-publish_data"
   timeout = 30
@@ -298,6 +315,7 @@ resource "aws_ssm_parameter" "publish_bucket" {
 }
 
 resource "aws_ssm_parameter" "sds_pcm_release_tag" {
+  count = var.sds_pcm_release_tag == null ? 0 : 1
   name  = "${local.service_path}/sds_pcm_release_tag"
   type  = "String"
   overwrite = true
@@ -379,4 +397,46 @@ resource "aws_ssm_parameter" "update_topic_arn" {
   type  = "String"
   overwrite = true
   value = data.aws_sns_topic.product_update.arn
+}
+
+resource "aws_ssm_parameter" "cmr_graphql_endpoint" {
+  name  = "${local.service_path}/cmr_graphql_endpoint"
+  type  = "String"
+  overwrite = true
+  value = var.cmr_graphql_endpoint
+}
+
+resource "aws_ssm_parameter" "edl_token" {
+  name  = "${local.service_path}/edl_token"
+  type  = "SecureString"
+  overwrite = true
+  value = var.edl_token
+}
+
+resource "aws_ssm_parameter" "pixc_concept_id" {
+  name  = "${local.service_path}/pixc_concept_id"
+  type  = "String"
+  overwrite = true
+  value = var.pixc_concept_id
+}
+
+resource "aws_ssm_parameter" "pixcvec_concept_id" {
+  name  = "${local.service_path}/pixcvec_concept_id"
+  type  = "String"
+  overwrite = true
+  value = var.pixcvec_concept_id
+}
+
+resource "aws_ssm_parameter" "xdf_orbit_1_0_concept_id" {
+  name  = "${local.service_path}/xdf_orbit_1.0_concept_id"
+  type  = "String"
+  overwrite = true
+  value = var.xdf_orbit_1_0_concept_id
+}
+
+resource "aws_ssm_parameter" "xdf_orbit_2_0_concept_id" {
+  name  = "${local.service_path}/xdf_orbit_concept_id"
+  type  = "String"
+  overwrite = true
+  value = var.xdf_orbit_2_0_concept_id
 }

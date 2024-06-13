@@ -14,7 +14,7 @@ VERSION=$(poetry version -s)
 ROOT_PATH="$PWD"
 ZIP_PATH="$ROOT_PATH/dist/$PACKAGE_NAME-$VERSION.zip"
 
-poetry bundle venv build --clear --without=dev
+poetry bundle venv --clear --without=dev --python=$(which python3.9) build
 
 cd build/lib/python3.*/site-packages
 touch podaac/__init__.py

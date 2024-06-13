@@ -2,11 +2,13 @@
 Lambda which processes the SQS message for inputs, submits the job(s) to the
 SDS, and returns a jobset
 '''
-import json
+from copy import deepcopy
 from time import sleep
 
 from requests import RequestException
 
+from podaac.swodlr_common.decorators import bulk_job_handler
+from podaac.swodlr_common.logging import JobMetadataInjector
 from .utilities import utils
 
 STAGE = __name__.rsplit('.', 1)[1]
@@ -15,46 +17,67 @@ PCM_RELEASE_TAG = utils.get_param('sds_pcm_release_tag')
 MAX_ATTEMPTS = int(utils.get_param('sds_submit_max_attempts'))
 TIMEOUT = int(utils.get_param('sds_submit_timeout'))
 
-logger = utils.get_logger(__name__)
+grq_es_client = utils.get_grq_es_client()
 
-validate_input = utils.load_json_schema('input')
+logger = utils.get_logger(__name__)
 validate_jobset = utils.load_json_schema('jobset')
 
 raster_eval_job_type = utils.mozart_client.get_job_type(
-    f'job-SUBMIT_L2_HR_Raster:{PCM_RELEASE_TAG}'
+    utils.get_latest_job_version('job-SUBMIT_L2_HR_Raster')
 )
 raster_eval_job_type.initialize()
 
 
-def lambda_handler(event, _context):
+@bulk_job_handler(returns_jobset=True)
+def handle_bulk_job(jobset):
     '''
     Lambda handler which accepts an SQS message, parses records as inputs,
     submits jobs to the SDS, and returns a jobset
     '''
-    logger.debug('Records received: %d', len(event['Records']))
+    inputs = deepcopy(jobset['inputs'])
+    jobs = [_process_input(input_) for input_ in jobset['inputs'].values()]
 
-    jobs = [_process_record(record) for record in event['Records']]
-
-    job_set = {'jobs': jobs}
-    job_set = validate_jobset(job_set)
+    job_set = {
+        'jobs': jobs,
+        'inputs': inputs
+    }
     return job_set
 
 
-def _process_record(record):
-    body = validate_input(json.loads(record['body']))
+def _process_input(input_):
     output = {
         'stage': STAGE,
-        'product_id': body['product_id']
+        'product_id': input_['product_id']
     }
 
-    cycle = str(body['cycle']).rjust(3, '0')
-    passe = str(body['pass']).rjust(3, '0')
-    tile = _scene_to_tile(body['scene'])  # Josh: 3:<
+    cycle = input_['cycle']
+    passe = input_['pass']
+    scene = input_['scene']
 
-    pixcvec_granule_name = f'{DATASET_NAME}_{cycle}_{passe}_{tile}_*'
+    # 3: - Josh
+    tiles = [
+        str(f'{tile:03}') for tile in range((scene * 2) - 1, (scene * 2) + 1)
+    ]
 
     try:
-        granule = utils.search_datasets(pixcvec_granule_name)
+        # pylint: disable-next=unexpected-keyword-arg
+        results: dict = grq_es_client.search(
+            index='grq',
+            size=10,
+            body={
+                'query': {
+                    'bool': {
+                        'must': [
+                            {'term': {'dataset_type.keyword': 'SDP'}},
+                            {'term': {'dataset.keyword': 'L2_HR_PIXC'}},
+                            {'term': {'metadata.CycleID': f'{cycle:03}'}},
+                            {'term': {'metadata.PassID': f'{passe:03}'}},
+                            {'terms': {'metadata.TileID': tiles}}
+                        ]
+                    }
+                }
+            }
+        )
     except RequestException:
         logger.exception('ES request failed')
         output.update(
@@ -63,10 +86,13 @@ def _process_record(record):
         )
         return output
 
-    if granule is None:
+    logger.debug('GRQ results: %s', str(results))
+    hits = results['hits']['hits']  # pylint: disable=unsubscriptable-object
+
+    if len(hits) == 0:
         logger.error(
-            'ES search returned no results: %s',
-            pixcvec_granule_name
+            'ES search returned no results - cycle: %d, pass: %d, scene: %d',
+            cycle, passe, scene
         )
         output.update(
             job_status='job-failed',
@@ -74,7 +100,7 @@ def _process_record(record):
         )
         return output
 
-    raster_eval_job_type.set_input_dataset(granule)
+    raster_eval_job_type.set_input_dataset(hits[0]['_source'])
 
     for i in range(1, MAX_ATTEMPTS + 1):
         try:
@@ -84,20 +110,12 @@ def _process_record(record):
 
             output.update(
                 job_id=job.job_id,
-                job_status='job-queued',
-                metadata={
-                    'cycle': body['cycle'],
-                    'pass': body['pass'],
-                    'scene': body['scene'],
-                    'output_granule_extent_flag':
-                        body['output_granule_extent_flag'],
-                    'output_sampling_grid_type':
-                        body['output_sampling_grid_type'],
-                    'raster_resolution': body['raster_resolution'],
-                    'utm_zone_adjust': body.get('utm_zone_adjust'),
-                    'mgrs_band_adjust': body.get('mgrs_band_adjust')
-                }
+                job_status='job-queued'
             )
+
+            job_logger = JobMetadataInjector(logger, output)
+            job_logger.info('Job queued on SDS')
+
             return output
         # pylint: disable=duplicate-code
         except Exception:  # pylint: disable=broad-exception-caught
@@ -113,12 +131,3 @@ def _process_record(record):
         errors=['SDS failed to accept job']
     )
     return output
-
-
-def _scene_to_tile(scene_id):
-    '''
-    Converts a scene id to the first tile id in the set
-    TODO: REMOVE THIS ONCE THE SDS ACCEPTS EXPLICIT SCENE IDS
-    '''
-    base = str(scene_id * 2).rjust(3, '0')
-    return f'{base}L'
