@@ -102,7 +102,7 @@ jobs:
           echo "TARGET_ENV=UAT" >> $GITHUB_ENV
       - name: Release version
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request'
-        run: bumpver update -f --tag final
+        run: bumpver update -f -n --tag final
       #   -- Build --
       - name: Show bumpver contents
         run: cat bumpver.toml
