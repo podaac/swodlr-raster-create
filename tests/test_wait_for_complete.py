@@ -75,4 +75,4 @@ class TestWaitForComplete(TestCase):
 
         self.assertEqual(result_job['job_status'], test_status)
         self.assertEqual(result_job['traceback'], test_traceback)
-        self.assertEqual(result_job['errors'], ['SDS threw an error'])
+        self.assertEqual(result_job['errors'], ['SDS threw an error. Please contact support'])  # pylint: disable=line-too-long # noqa: E501

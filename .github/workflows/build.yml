@@ -48,11 +48,14 @@ jobs:
       - name: Initial checkout ${{ github.ref }}
         if: github.event.inputs.commit == ''
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.podaac-cicd.outputs.token }}
       - name: Adjust to proper commit hash ${{ github.event.inputs.commit }}
         if: github.event.inputs.commit != ''
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.commit }}
+          token: ${{ steps.podaac-cicd.outputs.token }}
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
@@ -95,7 +98,7 @@ jobs:
       - name: Bump rc version
         if: startsWith(github.ref, 'refs/heads/release/') && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request'
         run: |
-          bumpver update -f --tag rc --tag-num
+          bumpver update -f -n --tag rc --tag-num
           echo "TARGET_ENV=UAT" >> $GITHUB_ENV
       - name: Release version
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request'
@@ -161,6 +164,7 @@ jobs:
           TF_VAR_sds_host:         ${{ secrets.SDS_HOST }}
           TF_VAR_sds_username:     ${{ secrets.SDS_USERNAME }}
           TF_VAR_sds_password:     ${{ secrets.SDS_PASSWORD }}
+          TF_VAR_edl_token:        ${{ secrets.EDL_TOKEN }}
           TF_VAR_sds_rs_bucket:    ${{ vars.SDS_RS_BUCKET }}
 
           TF_VAR_publish_bucket:   ${{ vars.PUBLISH_BUCKET }}

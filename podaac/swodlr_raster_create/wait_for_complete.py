@@ -14,7 +14,7 @@ validate_jobset = utils.load_json_schema('jobset')
 
 
 @bulk_job_handler(returns_jobset=True)
-def handle_jobs(jobs):
+def handle_jobs(jobset):
     '''
     Lambda handler which accepts a jobset, updates the statuses from the SDS,
     appends a waiting flag if the jobset still has jobs that haven't completed,
@@ -22,7 +22,7 @@ def handle_jobs(jobs):
     '''
     waiting = False
 
-    for job in jobs:
+    for job in jobset['jobs']:
         job_logger = JobMetadataInjector(logger, job)
 
         if job['job_status'] not in sds_statuses.WAITING:
@@ -42,26 +42,32 @@ def handle_jobs(jobs):
             job_status = 'job-timedout'  # Custom Swodlr status
 
         if job_status in sds_statuses.WAITING:
-            job_logger.info('Waiting for job')
+            job_logger.info('Waiting for job; status: %s', job_status)
             waiting = True
         else:
+            job_logger.info('Job finished; status: %s', job_status)
+
             job_logger.debug('Pulling metrics out')
             metrics = _extract_metrics(job_info)
-            job_logger.info('SDS metrics: %s', json.dumps(metrics))
+            job_logger.info('SDS metrics: %s', json.dumps({
+                'metrics': metrics,
+                'input': jobset['inputs'][job['product_id']]
+            }))
 
         job['job_status'] = job_status  # Update job in JobSet
 
         if 'traceback' in job_info:
             job.update(
                 traceback=job_info['traceback'],
-                errors=['SDS threw an error']
+                errors=['SDS threw an error. Please contact support']
             )
 
-    output = {'jobs': jobs}
     if waiting:
-        output.update(waiting=waiting)
+        jobset['waiting'] = True
+    elif 'waiting' in jobset:
+        del jobset['waiting']
 
-    output = validate_jobset(output)
+    output = validate_jobset(jobset)
     return output
 
 
