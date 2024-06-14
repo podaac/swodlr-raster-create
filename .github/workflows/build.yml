@@ -3,7 +3,13 @@ name: Build 'n Deploy
 on: 
   push:
     branches:
-      - '*'
+      - main
+      - develop
+      - 'release/**'
+      - 'feature/**'
+      - 'issue/**'
+      - 'issues/**'
+      - 'dependabot/**'
     tags-ignore:
       - '*'
     paths-ignore:
@@ -42,11 +48,14 @@ jobs:
       - name: Initial checkout ${{ github.ref }}
         if: github.event.inputs.commit == ''
         uses: actions/checkout@v4
+        with:
+          token: ${{ steps.podaac-cicd.outputs.token }}
       - name: Adjust to proper commit hash ${{ github.event.inputs.commit }}
         if: github.event.inputs.commit != ''
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.commit }}
+          token: ${{ steps.podaac-cicd.outputs.token }}
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
@@ -89,11 +98,13 @@ jobs:
       - name: Bump rc version
         if: startsWith(github.ref, 'refs/heads/release/') && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request'
         run: |
-          bumpver update -f --tag rc --tag-num
+          bumpver update -f -n --tag rc --tag-num
           echo "TARGET_ENV=UAT" >> $GITHUB_ENV
       - name: Release version
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request'
-        run: bumpver update -f --tag final
+        run: |
+          bumpver update -f -n --tag final
+          echo "TARGET_ENV=OPS" >> $GITHUB_ENV
       #   -- Build --
       - name: Show bumpver contents
         run: cat bumpver.toml
