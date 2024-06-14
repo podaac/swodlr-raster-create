@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "swodlr-raster-create"
-version = "1.1.0-alpha1"
+version = "1.1.0-alpha2"
 description = ""
 authors = ["podaac-tva <podaac-tva@jpl.nasa.gov>"]
 license = "Apache-2.0"
